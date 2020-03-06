@@ -8,11 +8,48 @@ from updater_state_machine import UpdaterStateMachine, State
 from updater_apt import UpdaterApt
 
 
+DBUS_INTERFACE_NAME = "org.OreSat.LinuxUpdater"
 CACHE_DIR = '/tmp/oresat-linux-updater/cache/'
 WORKING_DIR = '/tmp/oresat-linux-updater/working/'
+SLEEP_TIME_S = 1 # seconds, time that sleep and failed state sleeps for
 
 
 class LinuxUpdater(object):
+    dbus = """
+    <node>
+        <interface name="org.OreSat.LinuxUpdater">
+            <method name='AddArchiveFile'>
+                <arg type='s' name='file_path' direction='in'/>
+                <arg type='b' name='output' direction='out'/>
+            </method>
+            <method name='StartUpdate'>
+                <arg type='b' name='output' direction='out'/>
+            </method>
+            <method name='ForceUpdate'>
+                <arg type='s' name='file_path' direction='in'/>
+                <arg type='b' name='output' direction='out'/>
+            </method>
+            <method name='GetAptListOutput'>
+                <arg type='b' name='output' direction='out'/>
+            </method>
+            <property name="CurrentState" type="d" access="read">
+                <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
+            </property>
+            <property name="CurrentArchiveFile" type="s" access="read">
+                <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
+            </property>
+            <property name="AvailableArchiveFiles" type="d" access="read">
+                <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
+            </property>
+        </interface>
+    </node>
+    """ # this wont work in __init__()
+
+
+    # signals
+    PropertiesChanged = signal()
+
+
     def __init__(self):
         # make directories for updater, if not found
         Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
@@ -47,17 +84,17 @@ class LinuxUpdater(object):
 
 
     @property
-    def current_state(self):
+    def CurrentState(self):
         return self._state_machine.current_state
 
 
     @property
-    def current_archive_file(self):
+    def CurrentArchiveFile(self):
         return self._archive_file_name
 
 
     @property
-    def available_archive_files(self):
+    def AvailableArchiveFiles(self):
         return self._available_archive_files
 
 
@@ -65,7 +102,7 @@ class LinuxUpdater(object):
     # dbus methods
 
 
-    def add_archiveFile(self, file_path):
+    def AddArchiveFile(self, file_path):
         # (str) -> bool
         """ copies file into CACHE_DIR """
         if(file_path[0] != '/'):
@@ -93,14 +130,14 @@ class LinuxUpdater(object):
         return False # failed to copy
 
 
-    def start_update(self):
+    def StartUpdate(self):
         # () -> bool
         """ Start updaing if in sleep state """
         rv = True
 
         if self._state_machine.current_state == State.SLEEP.value:
             self.__lock.acquire()
-            self._state_machine.change_state(State.UPDATE.value)
+            self.__change_state(State.UPDATE.value)
             self.__lock.release()
         else:
             rv = False
@@ -108,7 +145,7 @@ class LinuxUpdater(object):
         return True
 
 
-    def get_apt_list_output(self):#TODO
+    def GetAptListOutput(self):
         """ To stop updaing """
         # () -> bool
         return True
@@ -117,14 +154,27 @@ class LinuxUpdater(object):
     # ------------------------------------------------------------------------
     # non-dbus class methods
 
+    def __change_state(self, new_state):
+        # (int) -> bool
+        """
+        Wrapper for updater state machine change state method. If the
+        transistion was valid emit the PropertiesChanged signal. All function
+        in the updater should call this function not the state machine fucntion
+        directly.
+        """
+        if self._state_machine.change_state(new_state):
+            self.PropertiesChanged(INTERFACE_NAME, {"CurrentState": self._state_machine.current_state}, [])
+            return True
+        return False
+
 
     def __working_loop(self):
         # () -> bool
         while(self.__running):
             if self._state_machine.current_state == State.FAILED.value:
-                time.sleep(1)
+                time.sleep(SLEEP_TIME_S)
             elif self._state_machine.current_state == State.SLEEP.value:
-                time.sleep(1)
+                time.sleep(SLEEP_TIME_S)
             elif self._state_machine.current_state == State.PREUPDATE.value:
                 self.__pre_update()
             elif self._state_machine.current_state == State.UPDATE.value:
@@ -136,7 +186,7 @@ class LinuxUpdater(object):
             else: # should not happen
                 syslog.syslog(syslog.LOG_ERR, "current_state is set to an unknowned state.")
                 self.__lock.acquire()
-                self._state_machine.change_state(State.FAILED.value)
+                self.__change_state(State.FAILED.value)
                 self.__lock.release()
 
 
@@ -154,7 +204,7 @@ class LinuxUpdater(object):
         list_of_files = os.listdir(CACHE_DIR)
         if not list_of_files:
             self.__lock.acquire()
-            self._state_machine.change_state(State.SLEEP.value)
+            self.__change_state(State.SLEEP.value)
             self.__lock.release()
             return True # done, empty, no update files
 
@@ -179,7 +229,7 @@ class LinuxUpdater(object):
             t.close()
 
         self.__lock.acquire()
-        self._state_machine.change_state(State.UPDATE.value)
+        self.__change_state(State.UPDATE.value)
         self.__lock.release()
         return True
 
@@ -194,7 +244,7 @@ class LinuxUpdater(object):
 
         if not self.__parse_update_file():
             self.__lock.acquire()
-            self._state_machine.change_state(State.REVERT.value)
+            self.__change_state(State.REVERT.value)
             self.__lock.release()
             return False
 
@@ -206,7 +256,7 @@ class LinuxUpdater(object):
         os.remove(archive_file_path)
         self._archive_file_name = ""
         self._available_archive_files -= 1
-        self._state_machine.change_state(State.SLEEP.value)
+        self.__change_state(State.SLEEP.value)
 
         self.__lock.release()
         return True
@@ -233,7 +283,7 @@ class LinuxUpdater(object):
         self._archive_file_name = ""
 
 
-        self._state_machine.change_state(State.SLEEP.value)
+        self.__change_state(State.SLEEP.value)
         self.__lock.release()
         return True
 
@@ -245,7 +295,7 @@ class LinuxUpdater(object):
 
         if not self.__parse_update_file():
             self.__lock.acquire()
-            self._state_machine.change_state(State.FAILED.value)
+            self.__change_state(State.FAILED.value)
             self.__lock.release()
             return False
 
@@ -257,7 +307,7 @@ class LinuxUpdater(object):
         os.remove(archive_file_path)
         self._archive_file_name = ""
         self._available_archive_files -= 1
-        self._state_machine.change_state(State.SLEEP.value)
+        self.__change_state(State.SLEEP.value)
 
         self.__lock.release()
         return True

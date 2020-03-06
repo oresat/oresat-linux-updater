@@ -4,7 +4,7 @@
 import sys, os
 from pydbus import SystemBus
 from gi.repository import GLib
-from updater_dbus import LinuxUpdaterDbus
+from updater import LinuxUpdater
 
 
 PID_FILE = '/run/oresat-linux-updater.pid'
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         daemonize()
 
     # make updater
-    updater = LinuxUpdaterDbus()
+    updater = LinuxUpdater()
 
     # set up dbus wrapper
     bus = SystemBus()
