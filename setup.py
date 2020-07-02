@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="oresat-linux-updaterd",
     version="0.0.1",
-    author="Ryan Medocl",
+    author="Ryan Medick",
     author_email="rmedick@pdx.edu",
     description="A daemon for all oresat linux boards to handle updating the board.",
     long_description=long_description,
