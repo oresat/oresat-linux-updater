@@ -1,26 +1,20 @@
-#!/usr/bin/env python3
-
-
 import sys, os
 from pydbus import SystemBus
 from gi.repository import GLib
 from updater import LinuxUpdater
 
 
-PID_FILE = '/run/oresat-linux-updater.pid'
-
-
 def daemonize():
     # Check for a pidfile to see if the daemon is already running
     try:
-        with open(PID_FILE,'r') as pf:
+        with open(pid_file,'r') as pf:
 
             pid = int(pf.read().strip())
     except IOError:
         pid = None
 
     if pid:
-        sys.stderr.write("pid file {0} already exist.\n".format(PID_FILE))
+        sys.stderr.write("pid file {0} already exist.\n".format(pid_file))
         sys.exit(1)
 
     try:
@@ -49,7 +43,7 @@ def daemonize():
     os.dup2(se.fileno(), sys.stderr.fileno())
 
     pid = str(os.getpid())
-    with open(PID_FILE,'w+') as f:
+    with open(pid_file,'w+') as f:
         f.write(pid + '\n')
 
 
@@ -65,6 +59,7 @@ def usage():
 
 
 if __name__ == "__main__":
+    pid_file = '/run/oresat-linux-updater.pid'
     daemon_flag = False
 
     opts, args = getpid.getpid(sys.argv[1:], "dh")
@@ -76,7 +71,7 @@ if __name__ == "__main__":
             exit(0)
 
     if daemon_flag:
-        daemonize()
+        daemonize(pid_file)
 
     # make updater
     updater = LinuxUpdater()
@@ -94,4 +89,5 @@ if __name__ == "__main__":
         updater.quit()
 
     # remove pid file
-    os.remove(PID_FILE)
+    if daemon_flag:
+        os.remove(pid_file)

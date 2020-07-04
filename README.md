@@ -1,4 +1,6 @@
 # OreSat Linux Updater
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 This is a daemon available on on all OreSat Linux board and will allow any the board to update/patched through a archive files.
 The archive file can contain *.deb packages to install, remove.txt (a file with list of deb packages to remove), and bash scripts to run.
 It is controlled through a dbus interface.
