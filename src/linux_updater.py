@@ -109,12 +109,54 @@ class LinuxUpdater():
         bool
             True if the update worked or False on failure.
         """
-        instructions_file = self._working_dir + "instructions.txt"
 
-        # get archive file
+        # move archive file into working dir
         archive_filepath = self._file_cache.get(self._working_dir)
         if not archive_file:
             return True # no file
+
+        return self._update(archive_filepath)
+
+
+    def update_now(self, archive_filepath):
+        # type: (str) -> bool
+        """
+        Load oldest update file if one exist and runs the update.
+
+        Returns
+        -------
+        bool
+            True if the update worked or False on failure.
+
+        Raise
+        -----
+        ValueError
+            dir_path was empty or not a absolute path.
+        """
+
+        # make sure input was valid
+        if not archive_filepath:
+            raise ValueError("Input was empty.")
+        if(archive_filepath[0] != '/'):
+            raise ValueError("Input was not an absolute path.")
+
+        # move archive file into working dir
+        ret = shutil.copyfile(file_path, self._working_dir)
+
+        return self._update(archive_filepath)
+
+
+    def _update(self, archive_filepath):
+        # type: (str) -> bool
+        """
+        Runs the update. Archive file should be in working directory.
+
+        Returns
+        -------
+        bool
+            True if the update worked or False on failure.
+        """
+        instructions_file = self._working_dir + "instructions.txt"
 
         # open the archive file
         t = tarfile.open(archive_filepath, "r:gz")

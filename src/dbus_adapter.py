@@ -95,7 +95,7 @@ class DbusAdapter(object):
         return self._updater.add_archive_file(file_path)
 
 
-    def StartUpdate(self):
+    def Update(self):
         # () -> bool
         """
         Load the oldest archive file in cache and runs update.
@@ -105,7 +105,25 @@ class DbusAdapter(object):
         bool
             True if updated worked or False on failure.
         """
-        return self._updater.change_state("update")
+        return self._updater.update()
+
+
+    def UpdateNow(self, file_path):
+        # (str) -> bool
+        """
+        Immedantly tries to to update with archive file, bypasses cache.
+
+        Parameters
+        ----------
+        file_path : str
+            Absolute path to archive file to add to cache.
+
+        Returns
+        -------
+        bool
+            True if updated worked or False on failure.
+        """
+        return self._updater.update_now(file_path)
 
 
     def GetPackageListFile(self):
@@ -118,7 +136,7 @@ class DbusAdapter(object):
         str
             Absolute filepath to file with the list of installed packages.
         """
-        return self._updater.get_pkg_installed_file()
+        return self._updater.get_pkg_list_file()
 
 
     # -------------------------------------------------------------------------

@@ -50,7 +50,7 @@ class FileCache():
         """
 
         # make sure input was valid
-        if not dir_path:
+        if not file_path:
             raise ValueError("Input was empty.")
         if(file_path[0] != '/'):
             raise ValueError("Input was not an absolute path.")
