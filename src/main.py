@@ -1,10 +1,19 @@
 import sys, os
 from pydbus import SystemBus
 from gi.repository import GLib
-from updater import LinuxUpdater
+from .linux_updater import LinuxUpdater
 
 
-def daemonize():
+def daemonize(pid_file):
+    """
+    Daemonize the process.
+
+    parameters
+    ----------
+    pid_file : str
+        The absolute path to the Linux updater pid file.
+    """
+
     # Check for a pidfile to see if the daemon is already running
     try:
         with open(pid_file,'r') as pf:
@@ -62,7 +71,7 @@ if __name__ == "__main__":
     pid_file = '/run/oresat-linux-updater.pid'
     daemon_flag = False
 
-    opts, args = getpid.getpid(sys.argv[1:], "dh")
+    opts, args = getopt.getopt(sys.argv[1:], "dh")
     for opt, arg in opts:
         if opt == "d":
             daemon_flag = True

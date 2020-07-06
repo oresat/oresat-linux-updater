@@ -1,21 +1,35 @@
-import apt, syslog
+import apt
 
 
-class UpdaterApt():
-    def __int__():
+class AptInterface():
+    """
+    Manges commication to apt using the python apt library.
+    https://apt-team.pages.debian.net/python-apt/contents.html
+    """
+
+    def __int__(self):
         self._cache = apt.cache.Cache()
 
 
     def install_package(self, package_path):
         # (str) -> bool
         """
-        Install the package.
+        Installs local deb package.
+
+        Parameters
+        ----------
+        package_path : str
+            Absoulte path to a deb package to install.
+
+        Returns
+        -------
+        bool
+            True if package was installed or False on failure..
         """
 
         for pkg in file_names:
             deb = apt.debfile.DebPackage(package_path)
             if not deb.check() or deb.install() != 0:
-                syslog.syslog(syslog.LOG_ERR, pkg + " is a invalid package or install failed.")
                 return False
 
         return True
@@ -26,12 +40,22 @@ class UpdaterApt():
         """
         Removes all packages in install packages_names. Since this uses the
         cache, all package removals can happen at the same time.
+
+
+        Parameters
+        ----------
+        package_names : [str]
+            A list of package names to remove.
+
+        Returns
+        -------
+        bool
+            True if all packages were removed or False on failure.
         """
 
         for pkg in package_names:
             package = self._cache[pkg_name]
             if package == None:
-                syslog.syslog(syslog.LOG_ERR, pkg_name + " not in cache.")
                 return False
 
             package.mark_delete()
@@ -40,30 +64,22 @@ class UpdaterApt():
         return True
 
 
-    def make_apt_list_file(self, file_path):
-        # (str) -> bool
+    def package_list(self):
+        # () -> [str]
         """
-        Make a file with the output of apt list --installed
+        Make a list with all package currently installed.
+
+        Returns
+        -------
+        [str]
+            A list of file names.
+
         """
 
         self._apt_list = []
         for pkg in cache:
             if pkg.is_installed:
                 self._apt_list.append(pkg.versions[0])
-
-        return apt_list
-
-
-    def load_apt_list_file(self, file_path):
-        # () -> [str]
-        """
-        Make a file with the output of apt list --installed
-        """
-        apt_list = []
-        cache = apt.cache.Cache()
-        for pkg in cache:
-            if pkg.is_installed:
-                apt_list.append(pkg.versions[0])
 
         return apt_list
 

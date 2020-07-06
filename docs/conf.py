@@ -29,6 +29,9 @@ author = 'Ryan Medick'
 # ones.
 extensions = [
     'sphinx.ext.napoleon',
+    'sphinx.ext.coverage',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.autodoc'
 ]
 
@@ -52,3 +55,12 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+
+# -- Others Options ----------------------------------------------------------
+
+# Example configuration for intersphinx: refer to the Python standard library.
+# To add links to stand python type definitions.
+intersphinx_mapping = {'python': ('https://docs.python.org/3/', None)}
+
+# So sphinx can build docs without required libs installed.
+autodoc_mock_imports = ["pydbus","apt"]
