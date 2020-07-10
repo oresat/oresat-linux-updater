@@ -1,9 +1,24 @@
 from .linux_updater import LinuxUpdater
+from .daemon import Daemon
 
 
-class DbusAdapter(object):
+class State(Enum):
     """
-    The dbus wrapper for the Linux updater. Dbus server.
+    All states for linux updater daemon,
+    do NOT uses auto() since we DO care about the values.
+    """
+    failed = 0
+    SLEEP = 1
+    PREUPDATE = 2
+    UPDATE = 3
+    REVERT = 4
+    FORCE = 5
+
+
+class LinuxUpdaterDaemon(object):
+    """
+    The daemon wrapper for the Linux updater. Includes a Dbus server and state
+    machine.
     """
 
     dbus = """
@@ -34,7 +49,7 @@ class DbusAdapter(object):
             </property>
         </interface>
     </node>
-    """ # this wont work in init()
+    """
 
 
     # -------------------------------------------------------------------------
@@ -42,7 +57,53 @@ class DbusAdapter(object):
 
 
     def __init__(self):
-        self._updater = LinuxUpdater()
+        self._working_dir = "/tmp/oresat-linux-updater/"
+        self._file_cache_dir = "/var/cache/oresat-linux-updater"
+
+        self._updater = LinuxUpdater(self._working_dir)
+
+        # setup archive file cache
+        self._file_cache = FileCache(self._file_cache_dir)
+
+        # figure out initial current state
+        if os.path.isfile(self._working_dir + "instructions.txt"):
+            # resume update
+            _current_state = State.update
+        elif len(os.listdir(self._working_dir)) != 0:
+            # unknown files and no instructions.txt
+            _current_state = State.failed
+        else:
+            # no files in working dir
+            _current_state = State.sleep
+
+        # thread set up and start thread
+        self._lock = threading.Lock()
+        self._working_thread = threading.Thread(target=self._working_loop, name="working-thread")
+        self._working_thread.start()
+        self._running = True
+
+
+    def __del__(self):
+        # stop thread
+        self._running = False
+        if self._working_thread.is_alive():
+            self._working_thread.join()
+
+
+    def _working_loop:
+        # () -> bool
+        while(self.__running):
+            if self._current_state == State.failed or self._current_state == State.sleep:
+                time.sleep(1)
+            elif self.__state == State.pre_update:
+                self._pre_update()
+            elif self._current_state == State.update:
+                self._update()
+            else: # should not happen
+                syslog.syslog(syslog.LOG_ERR, "current_state is set to an unknowned state.")
+                self._lock.acquire()
+                self._change_state = State.failed
+                self._lock.release()
 
 
     # -------------------------------------------------------------------------
@@ -54,7 +115,7 @@ class DbusAdapter(object):
         """
         Retuns the current state.
         """
-        return self._updater.current_state
+        return self._current_state.value
 
 
     @property
@@ -105,7 +166,11 @@ class DbusAdapter(object):
         bool
             True if updated worked or False on failure.
         """
-        return self._updater.update()
+
+        if self._current_state == State.sleep:
+            ret = self._updater.update()
+
+        return False
 
 
     def UpdateNow(self, file_path):

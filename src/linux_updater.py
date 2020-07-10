@@ -8,55 +8,24 @@ class LinuxUpdater():
     The main class for linux updater.
     """
 
-    def __init__(self):
-        self._working_dir = "/tmp/oresat-linux-updater/"
-        self._file_cache_dir = "/var/cache/oresat-linux-updater"
 
-        # make directory for updater, if not found
-        Path(self._working_dir).mkdir(parents=True, exist_ok=True)
+    def __init__(self, working_dir):
+        # type: (str) -> ()
+        """
+        Parameters
+        ----------
+        working_dir : str
+            Absolute path to a directory for the LinuxUpdater to use.
+        """
 
         # apt setup
         self._pkg_manager = AptInterface()
 
-        # archive file cache
-        self._file_cache = FileCache(self._file_cache_dir)
+        self._working_dir = working_dir
 
-        # thread safe setup
-        self._lock = threading.Lock()
-
-        # state
-        self._current_state = ""
-
-
-    def add_archive_file(self, filepath):
-        # type: (str) -> bool
-        """
-        Copies file into cache directory for later updates.
-
-        Parameters
-        ----------
-        filename : str
-            Filepath to archive file.
-
-        Returns
-        -------
-        bool
-            True if file was added or False on failure.
-        """
-
-        if(file_path[0] != '/'):
-            syslog.syslog(syslog.LOG_ERR, "Not an absolute path: " + filepath)
-            return False
-
-        # check for valid update file
-        if not re.match(r"(update-\d\d\d\d-\d\d-\d\d-\d\d-\d\d\.tar\.gz)", filepath):
-            syslog.syslog(syslog.LOG_ERR, "Not a valid update filename.")
-            return False
-
-        self._lock.acquire()
-        self._file_cache.add(filepath)
-        self._lock.release()
-        return True
+        self._archive_file = ""
+        self._instruction_type = ""
+        self._instruction_item = ""
 
 
     def get_pkg_list_file(self):
@@ -85,20 +54,6 @@ class LinuxUpdater():
         return filepath
 
 
-    def current_state(self):
-        # type: () -> str
-        """
-        Get the current state.
-
-        Returns
-        -------
-        str
-            The current state of the updater.
-        """
-
-        return self._current_state
-
-
     def update(self):
         # type: () -> bool
         """
@@ -118,78 +73,15 @@ class LinuxUpdater():
         return self._update(archive_filepath)
 
 
-    def update_now(self, archive_filepath):
-        # type: (str) -> bool
-        """
-        Load oldest update file if one exist and runs the update.
-
-        Returns
-        -------
-        bool
-            True if the update worked or False on failure.
-
-        Raise
-        -----
-        ValueError
-            dir_path was empty or not a absolute path.
-        """
-
-        # make sure input was valid
-        if not archive_filepath:
-            raise ValueError("Input was empty.")
-        if(archive_filepath[0] != '/'):
-            raise ValueError("Input was not an absolute path.")
-
-        # move archive file into working dir
-        ret = shutil.copyfile(file_path, self._working_dir)
-
-        return self._update(archive_filepath)
-
-
     def _update(self, archive_filepath):
         # type: (str) -> bool
         """
         Runs the update. Archive file should be in working directory.
 
-        Returns
-        -------
-        bool
-            True if the update worked or False on failure.
-        """
-        instructions_file = self._working_dir + "instructions.txt"
-
-        # open the archive file
-        t = tarfile.open(archive_filepath, "r:gz")
-        t.extractall()
-        t.close()
-
-        if os.path.isfile(instruction_file):
-            return False # no archive file
-
-        instructions_str = ""
-        with open(instructions_file,'r') as f:
-            instructions_str = f.read()
-
-        instructions = json.load(instructions_str)
-
-        if not self._run_instructions(instructions):
-            return False
-
-        return True
-
-
-    def _run_instructions(self, instructions):
-        # type: ([[str]]) -> bool
-        """
-        Run the instructions to install packages, remove packages, or run
-        bash scripts. Will log any faiilures.
-
         Parameters
         ----------
-        instructions : [[str]]
-            An array of instruction type str and filenames str. Where
-            instruction type can be "install_pkg", "remove_pkg, or
-            "bash_script".
+        archive_filepath : str
+            Path to archvice file.
 
         Returns
         -------
@@ -198,31 +90,67 @@ class LinuxUpdater():
         """
 
         ret = True
+        instructions_str = ""
+        instructions_file = self._working_dir + "instructions.txt"
+        self._archive_file = archive_filepath
+
+        # open the archive file
+        t = tarfile.open(archive_filepath, "r:gz")
+        t.extractall(path=self._working_dir)
+        t.close()
+
+        if os.path.isfile(instruction_file):
+            return False # no archive file
+
+        with open(instructions_file,'r') as f:
+            instructions_str = f.read()
+
+        instructions = json.load(instructions_str)
 
         # run instructions
         for i in instructions:
-            i_type = i[0]
-            i_file = self._working_dir + i[1]
+            self._instruction_type = i["type"]
+            self._instruction_item = i["item"]
 
-            if type == "install_pkg":
-                if not self._pkg_manager.install_pkg(i_file):
-                    syslog.syslog(syslog.LOG_ERR, "Install " + i[1] + " package failed.")
+            if i["type"] == "install_pkg":
+                if not self._pkg_manager.install(self._working_dir + i["item"]):
+                    error_msg = "Install " + i["item"] + " package failed."
+                    syslog.syslog(syslog.LOG_ERR, error_msg)
                     ret = False
                     break
-            elif type == "remove_pkg":
-                if not self._pkg_manager.remove_pkg(i_file):
-                    syslog.syslog(syslog.LOG_ERR, "Remove " + i[1] + " package failed.")
+            elif i["type"] == "remove_pkg":
+                if not self._pkg_manager.remove(self._working_dir + i["item"]):
+                    error_msg = "Remove " + i["item"] + " package failed."
+                    syslog.syslog(syslog.LOG_ERR, error_msg)
                     ret = False
                     break
-            elif type == "bash_script":
-                if subprocess.run(["/bin/bash/ ", i_file]) != 0:
-                    syslog.syslog(syslog.LOG_ERR, i_file + " exited with failure.")
+            elif i["type"] == "bash_script":
+                if subprocess.run(["/bin/bash ", i["item"]]) != 0:
+                    error_msg = i["item"] + " exited with failure."
+                    syslog.syslog(syslog.LOG_ERR, error_msg)
                     ret = False
                     break
             else:
-                syslog.syslog(syslog.LOG_ERR, "Unkown instruction type: " + i[0] + ".")
+                error_msg = "Unkown instruction type: " + i_type + "."
+                syslog.syslog(syslog.LOG_ERR, error_msg)
                 ret = False
                 break
 
+        self._instruction_type = ""
+        self._instruction_item = ""
         return True
 
+
+    @property
+    def archive_file():
+        return self._archive_file
+
+
+    @property
+    def instruction_type():
+        return self._instruction_type
+
+
+    @property
+    def item_item():
+        return self._instruction_item

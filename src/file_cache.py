@@ -14,6 +14,12 @@ class FileCache():
 
     def __init__(self, cache_dir_path):
         # type: (str) -> ()
+        """
+        parameters
+        ----------
+        dir_file : str
+            The absolute path to a directory for the cache.
+        """
 
         # If the directory does not make it
         Path(cache_dir_path).mkdir(parents=True, exist_ok=True)
@@ -38,8 +44,8 @@ class FileCache():
         file_path : str
             Absolute path to a file to add to the cache.
 
-        Raise
-        -----
+        Raises
+        ------
         ValueError
             dir_path was empty or not a absolute path.
 
@@ -62,27 +68,24 @@ class FileCache():
 
 
     def get(self, dir_path):
-        # type: (str) -> bool
+        # type: (str) -> str
         """
-        Add a file to the cache. Will check to the file name is the
-        correct format.
+        Copy the file from the cache to dir_path.
 
         Parameters
         ----------
         dir_path : str
             Absolute path to a directory to add the old file.
 
-        Raise
-        -----
+        Raises
+        ------
         ValueError
             dir_path was empty or not a absolute path.
 
         Returns
         -------
         str
-            Path to file.
-        None
-            If there was nothing to get. Cache was empty.
+            Path to new file.
         """
 
         # make sure input is valid
@@ -98,7 +101,7 @@ class FileCache():
         if self._cache_len <= 0:
             return None # cache is empty
 
-        file_list = os.listdir(self._cache_path)
+        file_list =file_list = os.listdir(self._cache_path) os.listdir(self._cache_path)
 
         if file_list:
             file_list.sort()
@@ -125,17 +128,27 @@ class FileCache():
 
 
     def remove(self, filename):
-        # type: (str) -> ()
+        # type: (str) -> bool
         """
         Gets the number of files in the cache.
 
         Parameters
-        ---------
+        ----------
         filepath : str
             Archive filename to delete from cache.
+
+        Returns
+        -------
+        bool
+            True if the remove worked otherwise False on failure.
         """
 
-        os.remove(self._cache_path + filename)
+        try:
+            os.remove(self._cache_path + filename)
+        except:
+            return False
+
+        return True
 
 
     def remove_all(self):

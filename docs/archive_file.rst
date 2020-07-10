@@ -23,19 +23,40 @@ Example archive file contents: ::
 
 instructions.txt format
 -----------------------
-instruction.txt contatins a JSON string with with a list of instructions and
-instruction_types. Where instruction_types can be install_pkg, remove_pkg, or
-bash_script. The instructions will be run in order.
+instruction.txt contatins a JSON string with with a list of instruction_types
+and instruction_item. Where instruction_types can be install_pkg, remove_pkg,
+or bash_script. The instructions will be run in order.
 
 Example instructions.txt contents: ::
 
     [
-        ["package1.deb", "install_pkg"],
-        ["bash_script1.sh","bash_script"],
-        ["package2.deb", "install_pkg"],
-        ["package3.deb", "install_pkg"],
-        ["bash_script2.sh","bash_script"],
-        ["package4", "remove_pkg"],
-        ["bash_script3.sh","bash_script"]
+        {
+            "type": "install_pkg",
+            "item": "package1.deb"
+        },
+        {
+            "type": "bash_script",
+            "item": "bash_script1.sh"
+        },
+        {
+            "type": "install_pkg",
+            "item": "package2.deb"
+        },
+        {
+            "type": "install_pkg",
+            "item": "package3.deb"
+        },
+        {
+            "type": "bash_script",
+            "item": "bash_script2.sh"
+        },
+        {
+            "type": "remove_pkg",
+            "item": "package4"
+        },
+        {
+            "type": "bash_script",
+            "item": "bash_script3.sh"
+        }
     ]
 

@@ -11,7 +11,7 @@ class AptInterface():
         self._cache = apt.cache.Cache()
 
 
-    def install_package(self, package_path):
+    def install(self, package_path):
         # (str) -> bool
         """
         Installs local deb package.
@@ -35,17 +35,15 @@ class AptInterface():
         return True
 
 
-    def remove_packages(self, package_names):
+    def remove(self, package_name):
         # ([str]) -> bool
         """
-        Removes all packages in install packages_names. Since this uses the
-        cache, all package removals can happen at the same time.
-
+        Removes a package.
 
         Parameters
         ----------
-        package_names : [str]
-            A list of package names to remove.
+        package_names : str
+            A package to remove.
 
         Returns
         -------

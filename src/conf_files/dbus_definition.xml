@@ -1,0 +1,27 @@
+<node>
+    <interface name="org.OreSat.LinuxUpdater">
+        <method name='AddArchiveFile'>
+            <arg type='s' name='file_path' direction='in'/>
+            <arg type='b' name='output' direction='out'/>
+        </method>
+        <method name='StartUpdate'>
+            <arg type='b' name='output' direction='out'/>
+        </method>
+        <method name='ForceUpdate'>
+            <arg type='s' name='file_path' direction='in'/>
+            <arg type='b' name='output' direction='out'/>
+        </method>
+        <method name='GetAptListOutput'>
+            <arg type='b' name='output' direction='out'/>
+        </method>
+        <property name="CurrentState" type="d" access="read">
+            <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
+        </property>
+        <property name="CurrentArchiveFile" type="s" access="read">
+            <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
+        </property>
+        <property name="AvailableArchiveFiles" type="d" access="read">
+            <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
+        </property>
+    </interface>
+</node>

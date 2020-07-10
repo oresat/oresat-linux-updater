@@ -2,73 +2,10 @@ import sys, os
 from pydbus import SystemBus
 from gi.repository import GLib
 from .linux_updater import LinuxUpdater
-
-
-def daemonize(pid_file):
-    """
-    Daemonize the process.
-
-    parameters
-    ----------
-    pid_file : str
-        The absolute path to the Linux updater pid file.
-    """
-
-    # Check for a pidfile to see if the daemon is already running
-    try:
-        with open(pid_file,'r') as pf:
-
-            pid = int(pf.read().strip())
-    except IOError:
-        pid = None
-
-    if pid:
-        sys.stderr.write("pid file {0} already exist.\n".format(pid_file))
-        sys.exit(1)
-
-    try:
-        pid = os.fork()
-        if pid > 0:
-            # exit from parent
-            sys.exit(0)
-    except OSError as err:
-        sys.stderr.write('fork failed: {0}\n'.format(err))
-        sys.exit(1)
-
-    # decouple from parent environment
-    os.chdir('/')
-    os.setsid()
-    os.umask(0)
-
-    # redirect standard file descriptors
-    sys.stdout.flush()
-    sys.stderr.flush()
-    si = open(os.devnull, 'r')
-    so = open(os.devnull, 'a+')
-    se = open(os.devnull, 'a+')
-
-    os.dup2(si.fileno(), sys.stdin.fileno())
-    os.dup2(so.fileno(), sys.stdout.fileno())
-    os.dup2(se.fileno(), sys.stderr.fileno())
-
-    pid = str(os.getpid())
-    with open(pid_file,'w+') as f:
-        f.write(pid + '\n')
-
-
-def usage():
-    message = """"
-        usage:\n \
-        python3 updater_daemon      : to run as a process
-        python3 updater_daemon -d   : to run as a daemon
-        python3 updater_daemon -h   : this
-        """
-
-    print(message)
+from .daemon import Daemon
 
 
 if __name__ == "__main__":
-    pid_file = '/run/oresat-linux-updater.pid'
     daemon_flag = False
 
     opts, args = getopt.getopt(sys.argv[1:], "dh")
@@ -80,23 +17,20 @@ if __name__ == "__main__":
             exit(0)
 
     if daemon_flag:
-        daemonize(pid_file)
+        daemon = Daemon("/run/oresat-linux-updater.pid")
+        daemon.run()
 
     # make updater
-    updater = LinuxUpdater()
+    updater_daemon = LinuxUpdaterDaemon()
 
     # set up dbus wrapper
     bus = SystemBus()
-    bus.publish(DBUS_INTERFACE_NAME, updater)
+    bus.publish(DBUS_INTERFACE_NAME, updater_daemon)
 
     # start dbus wrapper
     loop = GLib.MainLoop()
+
     try:
         loop.run()
     except KeyboardInterrupt as e:
         loop.quit()
-        updater.quit()
-
-    # remove pid file
-    if daemon_flag:
-        os.remove(pid_file)
