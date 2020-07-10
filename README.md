@@ -1,4 +1,5 @@
 # OreSat Linux Updater
+![oresat-linux-updater](https://github.com/oresat/oresat-linux-updater/workflows/oresat-linux-updater/badge.svg)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 This is a daemon available on on all OreSat Linux board and will allow any the board to update/patched through a archive files.
@@ -41,7 +42,7 @@ It is controlled through a dbus interface.
     - **revert.txt** - A file to mark reverting is / has happened. On boot up of the oresat-linux-updater this file will be used to figure out if what state to go to in boot up. If it contains "inprocess", the updater was stop in the middle of an update, therefor resume a revert. If it contains "failed", the revert failed, goto failed on boot. If it doesn't exist, it was not reverting, check for apt_list_file.txt. 
 
 ### States Machine
-![](docs/UpdaterStateMachine.jpg)
+![](docs/images/UpdaterStateMachine.jpg)
 - **Sleep** - Waiting, listening for commands.
 - **Pre-Update** - If there are archive files available in cache, the updater will open the oldest one and dump its contents in the working directory.
 - **Update** - Install all deb packages, remove deb package as remove.txt says, and run all bash scripts in working directory. Clean up working directory on success.
