@@ -7,7 +7,6 @@ Linux Updater's Internal
 
     apt_interface
     daemon
-    dbus_adaptor
     file_cache
     linux_updater
     main

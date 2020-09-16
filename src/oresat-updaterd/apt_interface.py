@@ -1,3 +1,5 @@
+"""simplified apt interface"""
+
 import apt
 
 
@@ -7,12 +9,10 @@ class AptInterface():
     https://apt-team.pages.debian.net/python-apt/contents.html
     """
 
-    def __int__(self):
+    def __init__(self):
         self._cache = apt.cache.Cache()
 
-
-    def install(self, package_path):
-        # (str) -> bool
+    def install(self, package_path: str) -> bool:
         """
         Installs local deb package.
 
@@ -27,16 +27,13 @@ class AptInterface():
             True if package was installed or False on failure..
         """
 
-        for pkg in file_names:
-            deb = apt.debfile.DebPackage(package_path)
-            if not deb.check() or deb.install() != 0:
-                return False
+        deb = apt.debfile.DebPackage(package_path)
+        if not deb.check() or deb.install() != 0:
+            return False
 
         return True
 
-
-    def remove(self, package_name):
-        # ([str]) -> bool
+    def remove(self, pkg_name: str) -> bool:
         """
         Removes a package.
 
@@ -51,19 +48,16 @@ class AptInterface():
             True if all packages were removed or False on failure.
         """
 
-        for pkg in package_names:
-            package = self._cache[pkg_name]
-            if package == None:
-                return False
+        package = self._cache[pkg_name]
+        if package is None:
+            return False
 
-            package.mark_delete()
+        package.mark_delete()
 
         self._cache.commit()
         return True
 
-
-    def package_list(self):
-        # () -> [str]
+    def package_list(self) -> [str]:
         """
         Make a list with all package currently installed.
 
@@ -74,10 +68,9 @@ class AptInterface():
 
         """
 
-        self._apt_list = []
-        for pkg in cache:
+        apt_list = []
+        for pkg in self._cache:
             if pkg.is_installed:
-                self._apt_list.append(pkg.versions[0])
+                apt_list.append(pkg.versions[0])
 
         return apt_list
-
