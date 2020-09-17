@@ -6,10 +6,18 @@ import getopt
 import logging
 from pydbus import SystemBus
 from gi.repository import GLib
-from .linux_updater_daemon import LinuxUpdaterDaemon
+from oresat_updaterd.linux_updater_daemon import LinuxUpdaterDaemon
+from oresat_updaterd.linux_updater_daemon import DBUS_INTERFACE_NAME
 
-DBUS_INTERFACE_NAME = "temp"
+
 APP_NAME = "oresat-updaterd"
+DAEMON_FLAG = False
+FILE_CACHE_DIR = "/var/cache/" + APP_NAME + "/"
+LOG_FORMAT = '%(asctime)s - %(levelname)s - %(funcName)s - %(message)s'
+LOG_FILE = "/var/log/" + APP_NAME + ".log"
+PID_FILE = "/run/oresat-updaterd.pid"
+VERBOSE = False
+WORKING_DIR = "/tmp/" + APP_NAME + "/"
 
 
 def daemonize(pid_file: str):
@@ -64,7 +72,7 @@ def daemonize(pid_file: str):
 
 def usage():
     """Arg message"""
-    message = """"
+    message = """
         usage:\n
         python3 ultra.py      : to run as a process.
         python3 ultra.py -d   : to run as a daemon.
@@ -74,10 +82,6 @@ def usage():
 
 
 if __name__ == "__main__":
-    PID_FILE = "/run/oresat-updaterd.pid"
-    DAEMON_FLAG = False
-    VERBOSE = False
-
     opts = getopt.getopt(sys.argv[1:], "dvh")
     for opt in opts:
         if opt == "d":
@@ -90,34 +94,29 @@ if __name__ == "__main__":
 
     if DAEMON_FLAG:
         daemonize(PID_FILE)
-        LOG_FILE = "/var/log/" + APP_NAME + ".log"
-        WORKING_DIR = "/tmp/" + APP_NAME + "/"
-        FILE_CACHE_DIR = "/var/cache/" + APP_NAME + "/"
-    else:
-        LOG_FILE = APP_NAME + ".log"
-        WORKING_DIR = "/tmp/" + APP_NAME + "/"
-        FILE_CACHE_DIR = APP_NAME + "/cache/"
-
-        # also send all log message to stderr
-        logging.getLogger().addHandler(logging.StreamHandler())
 
     # turn on logging for debug messages
     if VERBOSE:
-        logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG)
+        logging.basicConfig(
+            filename=LOG_FILE,
+            level=logging.DEBUG,
+            format=LOG_FORMAT
+            )
     else:
-        logging.basicConfig(filename=LOG_FILE, level=logging.INFO)
+        logging.basicConfig(
+            filename=LOG_FILE,
+            level=logging.INFO,
+            format=LOG_FORMAT
+            )
+
+    logging.getLogger().addHandler(logging.StreamHandler())
 
     # make updater
-    updater_daemon = LinuxUpdaterDaemon(
-        WORKING_DIR,
-        FILE_CACHE_DIR
-        )
+    updater_daemon = LinuxUpdaterDaemon(WORKING_DIR, FILE_CACHE_DIR)
 
     # set up dbus wrapper
     bus = SystemBus()
     bus.publish(DBUS_INTERFACE_NAME, updater_daemon)
-
-    # start dbus wrapper
     loop = GLib.MainLoop()
 
     try:

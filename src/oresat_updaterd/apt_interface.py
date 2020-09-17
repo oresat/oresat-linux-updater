@@ -1,6 +1,7 @@
 """simplified apt interface"""
 
-import apt
+import json
+from apt import cache, debfile
 
 
 class AptInterface():
@@ -10,7 +11,7 @@ class AptInterface():
     """
 
     def __init__(self):
-        self._cache = apt.cache.Cache()
+        self._cache = cache.Cache()
 
     def install(self, package_path: str) -> bool:
         """
@@ -27,7 +28,7 @@ class AptInterface():
             True if package was installed or False on failure..
         """
 
-        deb = apt.debfile.DebPackage(package_path)
+        deb = debfile.DebPackage(package_path)
         if not deb.check() or deb.install() != 0:
             return False
 
@@ -57,20 +58,29 @@ class AptInterface():
         self._cache.commit()
         return True
 
-    def package_list(self) -> [str]:
+    def package_list(self) -> str:
         """
         Make a list with all package currently installed.
 
         Returns
         -------
-        [str]
-            A list of file names.
+        str
+            A JSON list of package and their versions that are installed.
 
         """
 
         apt_list = []
+
         for pkg in self._cache:
             if pkg.is_installed:
-                apt_list.append(pkg.versions[0])
+                for ver in pkg.versions:
+                    if ver.is_installed:
+                        temp = {
+                            "name": pkg.shortname,
+                            "version": ver.version
+                            }
+                        apt_list.append(temp)
 
-        return apt_list
+        apt_json = json.dumps({"packages": apt_list})
+
+        return apt_json

@@ -5,8 +5,9 @@ import time
 import os
 import logging
 from enum import Enum
-from .linux_updater import LinuxUpdater
+from oresat_updaterd.linux_updater import LinuxUpdater
 
+DBUS_INTERFACE_NAME = "org.OreSat.Updater"
 
 class State(Enum):
     """
@@ -37,30 +38,23 @@ class LinuxUpdaterDaemon(object):
 
     dbus = """
     <node>
-        <interface name="org.OreSat.LinuxUpdater">
+        <interface name="org.OreSat.Updater">
             <method name='AddArchiveFile'>
                 <arg type='s' name='filepath' direction='in'/>
                 <arg type='b' name='output' direction='out'/>
             </method>
-            <method name='StartUpdate'>
+            <method name='Update'>
                 <arg type='b' name='output' direction='out'/>
             </method>
-            <method name='ForceUpdate'>
-                <arg type='s' name='filepath' direction='in'/>
-                <arg type='b' name='output' direction='out'/>
+            <method name='GetPackageListFile'>
+                <arg type='s' name='output' direction='out'/>
             </method>
-            <method name='GetAptListOutput'>
-                <arg type='b' name='output' direction='out'/>
-            </method>
-            <property name="CurrentState" type="d" access="read">
-                <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-            </property>
-            <property name="CurrentArchiveFile" type="s" access="read">
-                <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-            </property>
-            <property name="AvailableArchiveFiles" type="d" access="read">
-                <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-            </property>
+            <property name="CurrentStateName" type="s" access="read" />
+            <property name="CurrentStateValue" type="d" access="read" />
+            <property name="CurrentArchiveFile" type="s" access="read" />
+            <property name="CurrentInstructionType" type="s" access="read" />
+            <property name="CurrentInstructionItem" type="s" access="read" />
+            <property name="AvailableArchiveFiles" type="d" access="read" />
         </interface>
     </node>
     """
@@ -73,12 +67,9 @@ class LinuxUpdaterDaemon(object):
                  file_cache_dir="./filecache/"
                  ):
 
-        # setup dirs
-        self._working_dir = working_dir
-        self._file_cache_dir = file_cache_dir
-
         # initial state machine
-        if os.path.isfile(self._working_dir + "instructions.txt"):
+        if not os.listdir(working_dir):
+            # somthing is in working dir, assume to resume update
             self._current_state = State.update
         else:
             self._current_state = State.standby
@@ -89,8 +80,7 @@ class LinuxUpdaterDaemon(object):
             State.update: [State.failed, State.standby, State.update]
             }
 
-        # linux updater
-        self._updater = LinuxUpdater(self._working_dir)
+        self._updater = LinuxUpdater(working_dir, file_cache_dir)
 
         # thread set up and start working thread
         self._lock = threading.Lock()
@@ -142,9 +132,10 @@ class LinuxUpdaterDaemon(object):
         valid_change = True
 
         if new_state not in self._state_transistions[self._current_state]:
+            logging.critical("unknown state: " + str(new_state))
             valid_change = False
-            logging("unknown state {} in change_state.", new_state)
         else:
+            logging.debug("changing to state " + str(new_state))
             self._lock.acquire()
             self._current_state = new_state
             self._lock.release()
@@ -179,6 +170,30 @@ class LinuxUpdaterDaemon(object):
         return self._current_state.name
 
     @property
+    def CurrentInstructionType(self) -> str:
+        """
+        Getter for the current instruction type.
+
+        Returns
+        -------
+        str
+            Instruction type i.e. install_pkg, remove_pkg, bash_script.
+        """
+        return self._updater.instruction_type
+
+    @property
+    def CurrentInstructionItem(self) -> str:
+        """
+        Getter for the current instruction item.
+
+        Returns
+        -------
+        str
+            What is being install, remove, or ran.
+        """
+        return self._updater.instruction_item
+
+    @property
     def CurrentArchiveFile(self) -> str:
         """
         Getter for current archive file.
@@ -188,7 +203,7 @@ class LinuxUpdaterDaemon(object):
         str
             The current archive filename.
         """
-        return self._updater.current_archive_file
+        return self._updater.archive_file
 
     @property
     def AvailableArchiveFiles(self) -> int:
@@ -233,14 +248,14 @@ class LinuxUpdaterDaemon(object):
 
         ret = False
         if self._current_state == State.standby:
-            self._current_archive_file = self._file_cache.get()
-            ret = self._change_state(State.pre_update)
+            ret = self._change_state(State.update)
 
         return ret
 
     def GetPackageListFile(self) -> str:
         """
         To get a file with a list of all the files installed.
+        Note: it is up to client to move file.
 
         Returns
         -------
