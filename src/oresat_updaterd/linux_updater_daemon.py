@@ -101,7 +101,7 @@ class LinuxUpdaterDaemon(object):
         """
 
         while self._running:
-            if self._current_state in State.standby:
+            if self._current_state == State.standby:
                 time.sleep(1)  # nothing for this thread to do
             elif self._current_state == State.update:
                 ret = self._updater.update()
@@ -141,6 +141,12 @@ class LinuxUpdaterDaemon(object):
             self._lock.release()
 
         return valid_change
+
+    def quit(self):
+        # stop working thread
+        self._running = False
+        if self._working_thread.is_alive():
+            self._working_thread.join()
 
     # -------------------------------------------------------------------------
     # dbus properties

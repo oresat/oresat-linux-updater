@@ -122,6 +122,7 @@ if __name__ == "__main__":
     try:
         loop.run()
     except KeyboardInterrupt:
+        updater_daemon.quit()
         loop.quit()
 
     if DAEMON_FLAG is True:

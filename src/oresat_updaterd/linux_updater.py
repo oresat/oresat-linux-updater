@@ -135,12 +135,13 @@ class LinuxUpdater():
 
         if not resume:  # get new archive file from cache
             archive_filepath = self._file_cache.get(self._working_dir)
-            self._archive_file = os.path.basename(archive_filepath)
-            logging.debug("Starting update with {}".format(archive_filepath))
 
             if not archive_filepath:
                 logging.info("No files in cache")
                 return True  # no file, nothing to do
+
+            self._archive_file = os.path.basename(archive_filepath)
+            logging.debug("Starting update with {}".format(archive_filepath))
 
             # open the archive file
             with tarfile.open(archive_filepath, "r:gz") as tfile:
