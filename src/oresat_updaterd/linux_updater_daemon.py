@@ -9,6 +9,7 @@ from oresat_updaterd.linux_updater import LinuxUpdater
 
 DBUS_INTERFACE_NAME = "org.OreSat.Updater"
 
+
 class State(Enum):
     """
     All states for linux updater daemon,
@@ -67,6 +68,8 @@ class LinuxUpdaterDaemon(object):
                  file_cache_dir="./filecache/"
                  ):
 
+        self._updater = LinuxUpdater(working_dir, file_cache_dir)
+
         # initial state machine
         if not os.listdir(working_dir):
             # somthing is in working dir, assume to resume update
@@ -74,17 +77,18 @@ class LinuxUpdaterDaemon(object):
         else:
             self._current_state = State.standby
 
+        logging.debug("init state is " + State.standby.name)
+
         self._state_transistions = {
             State.failed: [State.failed, State.standby],
             State.standby: [State.standby, State.update],
             State.update: [State.failed, State.standby, State.update]
             }
 
-        self._updater = LinuxUpdater(working_dir, file_cache_dir)
-
         # thread set up and start working thread
         self._lock = threading.Lock()
         self._working_thread = threading.Thread(target=self._working_loop)
+        logging.debug("starting working thread")
         self._running = True
         self._working_thread.start()
 

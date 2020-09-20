@@ -11,12 +11,10 @@ from oresat_updaterd.linux_updater_daemon import DBUS_INTERFACE_NAME
 
 
 APP_NAME = "oresat-updaterd"
-DAEMON_FLAG = False
 FILE_CACHE_DIR = "/var/cache/" + APP_NAME + "/"
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(funcName)s - %(message)s'
 LOG_FILE = "/var/log/" + APP_NAME + ".log"
 PID_FILE = "/run/oresat-updaterd.pid"
-VERBOSE = False
 WORKING_DIR = "/tmp/" + APP_NAME + "/"
 
 
@@ -82,13 +80,16 @@ def usage():
 
 
 if __name__ == "__main__":
-    opts = getopt.getopt(sys.argv[1:], "dvh")
-    for opt in opts:
-        if opt == "d":
+    DAEMON_FLAG = False
+    VERBOSE = False
+
+    opts, args = getopt.getopt(sys.argv[1:], "dvh")
+    for opt, arg in opts:
+        if opt == "-d":
             DAEMON_FLAG = True
-        if opt == "v":
+        if opt == "-v":
             VERBOSE = True
-        elif opt == "h":
+        elif opt == "-h":
             usage()
             sys.exit(0)
 
@@ -110,6 +111,7 @@ if __name__ == "__main__":
             )
 
     logging.getLogger().addHandler(logging.StreamHandler())
+    logging.info("verbose" + str(VERBOSE))
 
     # make updater
     updater_daemon = LinuxUpdaterDaemon(WORKING_DIR, FILE_CACHE_DIR)

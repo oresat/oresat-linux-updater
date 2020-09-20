@@ -33,7 +33,12 @@ class LinuxUpdater():
             Path to a directory for the LinuxUpdater to cache packages.
         """
 
+        logging.debug("working dir is " + working_dir)
+        logging.debug("file cache dir is " + cache_dir_path)
+
+        logging.debug("setup up apt cache")
         self._pkg_manager = AptInterface()
+        logging.debug("setup up archive file cache")
         self._file_cache = FileCache(cache_dir_path)
         self._working_dir = working_dir
 
