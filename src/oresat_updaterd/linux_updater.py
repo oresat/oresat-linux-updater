@@ -33,8 +33,8 @@ class LinuxUpdater():
             Path to a directory for the LinuxUpdater to cache packages.
         """
 
-        logging.debug("working dir is " + working_dir)
-        logging.debug("file cache dir is " + cache_dir_path)
+        logging.debug("working dir is %s", working_dir)
+        logging.debug("file cache dir is %s", cache_dir_path)
 
         logging.debug("setup up apt cache")
         self._pkg_manager = AptInterface()
@@ -71,30 +71,29 @@ class LinuxUpdater():
         pkg_json = self._pkg_manager.package_list()
 
         # make txt file
-        with open(txt_file, "w") as f:
-            f.write(pkg_json)
+        with open(txt_file, "w") as fptr:
+            fptr.write(pkg_json)
 
         # make tar
-        with tarfile.open(tar_file, "w:gz") as f:
-            f.add(txt_file, arcname=txt_filename)
+        with tarfile.open(tar_file, "w:gz") as fptr:
+            fptr.add(txt_file, arcname=txt_filename)
 
         os.remove(txt_file)
 
-        logging.debug("{} was made".format(tar_file))
+        logging.debug("%s was made", tar_file)
 
         return tar_file
 
-    def add_archive_file(self, filepath: str):
+    def add_archive_file(self, filepath: str) -> bool:
         """
         Load oldest update file if one exist and runs the update.
         """
 
         try:
             self._file_cache.add(filepath)
-            logging.info("{} was added to cache".format(filepath))
+            logging.info("%s was added to cache", filepath)
         except:
-            msg = "failed to add " + filepath + " to cache"
-            logging.error(msg)
+            logging.error("failed to add %s to cache", filepath)
             return False
         return True
 
@@ -116,14 +115,14 @@ class LinuxUpdater():
 
             for f in wd_files:
                 if re.search(_ARCHIVE_FILE_REGEX, f):  # check for tar
-                    logging.info("{} found".format(f))
+                    logging.info("%s found", f)
                     self._archive_file = f
 
                     if f == "instructions.txt":  # check for instructions.txt
                         logging.info("instructions.txt found, skipping untar")
                     else:
                         # open the archive file
-                        logging.debug("untar {}".format(f))
+                        logging.debug("untar %s", f)
                         with tarfile.open(f, "r:gz") as tfile:
                             tfile.extractall(path=self._working_dir)
 
@@ -146,11 +145,11 @@ class LinuxUpdater():
                 return True  # no file, nothing to do
 
             self._archive_file = os.path.basename(archive_filepath)
-            logging.debug("Starting update with {}".format(archive_filepath))
+            logging.debug("Starting update with %s", archive_filepath)
 
             # open the archive file
             with tarfile.open(archive_filepath, "r:gz") as tfile:
-                logging.debug("untar {}".format(archive_filepath))
+                logging.debug("untar %s", archive_filepath)
                 tfile.extractall(path=self._working_dir)
 
         return self._update()
@@ -170,11 +169,11 @@ class LinuxUpdater():
         instructions_file = self._working_dir + "instructions.txt"
 
         if not os.path.isfile(instructions_file):
-            logging.error("{} not found".format(instructions_file))
+            logging.error("%s not found", instructions_file)
             return False  # no archive file
 
-        with open(instructions_file, 'r') as f:
-            instructions_str = f.read()
+        with open(instructions_file, 'r') as fptr:
+            instructions_str = fptr.read()
 
         instructions = json.loads(instructions_str)
 
@@ -184,33 +183,29 @@ class LinuxUpdater():
             i_item = i["item"]
             self._instruction_type = i_type
             self._instruction_item = i_item
-            
+
             msg = i_type + " " + i_item
             logging.debug(msg)
 
             if i_type == "install_pkg":
                 if not self._pkg_manager.install(self._working_dir + i_item):
-                    error_msg = "Install " + i_item + " package failed."
-                    logging.error(error_msg)
+                    logging.error("Install %s package failed.", i_item)
                     ret = False
                     break
             elif i_type == "remove_pkg":
                 if not self._pkg_manager.remove(i_item):
-                    error_msg = "Remove " + i_item + " package failed."
-                    logging.error(error_msg)
+                    logging.error("Remove %s package failed.", i_item)
                     ret = False
                     break
             elif i_type == "bash_script":
                 command = "bash " + self._working_dir + i_item
-                logging.debug("running " + command)
+                logging.debug("running %s", command)
                 if subprocess.call(command, shell=True) != 0:
-                    error_msg = i_item + " exited with failure."
-                    logging.error(error_msg)
+                    logging.error("%s exited with failure.", i_item)
                     ret = False
                     break
             else:
-                error_msg = "Unkown instruction type: " + i["type"] + "."
-                logging.error(error_msg)
+                logging.error("Unkown instruction type: %s", i_type)
                 ret = False
                 break
 

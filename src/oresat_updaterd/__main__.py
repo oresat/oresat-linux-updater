@@ -29,8 +29,8 @@ def daemonize(pid_file: str):
 
     # Check for a pidfile to see if the daemon is already running
     try:
-        with open(pid_file, 'r') as pf:
-            pid = int(pf.read().strip())
+        with open(pid_file, 'r') as fptr:
+            pid = int(fptr.read().strip())
     except IOError:
         pid = None
 
@@ -64,8 +64,8 @@ def daemonize(pid_file: str):
     os.dup2(se.fileno(), sys.stderr.fileno())
 
     pid = str(os.getpid())
-    with open(PID_FILE, 'w+') as f:
-        f.write(pid + '\n')
+    with open(PID_FILE, 'w+') as fptr:
+        fptr.write(pid + '\n')
 
 
 def usage():
@@ -111,7 +111,7 @@ if __name__ == "__main__":
             )
 
     logging.getLogger().addHandler(logging.StreamHandler())
-    logging.info("verbose" + str(VERBOSE))
+    logging.info("verbose %s", str(VERBOSE))
 
     # make updater
     updater_daemon = LinuxUpdaterDaemon(WORKING_DIR, FILE_CACHE_DIR)
