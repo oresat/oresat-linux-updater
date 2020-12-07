@@ -6,16 +6,13 @@ import getopt
 import logging
 from pydbus import SystemBus
 from gi.repository import GLib
-from oresat_updaterd.linux_updater_daemon import LinuxUpdaterDaemon
-from oresat_updaterd.linux_updater_daemon import DBUS_INTERFACE_NAME
-
-
-APP_NAME = "oresat-updaterd"
-FILE_CACHE_DIR = "/var/cache/" + APP_NAME + "/"
-LOG_FORMAT = '%(asctime)s - %(levelname)s - %(funcName)s - %(message)s'
-LOG_FILE = "/var/log/" + APP_NAME + ".log"
-PID_FILE = "/run/oresat-updaterd.pid"
-WORKING_DIR = "/tmp/" + APP_NAME + "/"
+from oresat_linux_updater import FILE_CACHE_DIR
+from oresat_linux_updater import LOG_FORMAT
+from oresat_linux_updater import LOG_FILE
+from oresat_linux_updater import PID_FILE
+from oresat_linux_updater import WORKING_DIR
+from oresat_linux_updater.linux_updater_daemon import LinuxUpdaterDaemon
+from oresat_linux_updater.linux_updater_daemon import DBUS_INTERFACE_NAME
 
 
 def daemonize(pid_file: str):

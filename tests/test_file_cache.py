@@ -1,5 +1,5 @@
 import pytest
-from file_cache import FileCache
+from oresat_updaterd.file_cache import FileCache
 
 FILE_CACHE = None
 cache_dir_path = "./testcache/"

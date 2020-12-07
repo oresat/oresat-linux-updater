@@ -22,3 +22,5 @@ or bash scripts are ran.
 - `sudo apt install python3-stdeb`
 - `python3 setup.py --command-packages=stdeb.command bdist_deb`
 
+## Unit Tests
+- `PYTHONPATH=".:src/" pytest tests` or `PYTHONPATH=".:src/" pytest-3 tests`
