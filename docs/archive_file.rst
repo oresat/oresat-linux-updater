@@ -1,8 +1,8 @@
 Archive File
 ============
-Archive files name should be in the formate of
-board_name-update-YYYY-MM-dd-hh-mm-ss.tar.gz. Example:
-star_tracker-update-2020-02-10-14-30-23.tar.gz aka a start tracker update
+Archive files name should be in the format of
+board-name_update_YYYY-MM-dd-hh-mm-ss.tar.gz. Example:
+startracker_update_2020-02-10-14-30-23.tar.gz aka a star tracker update
 archive file made on Feburary 10th 2020 at 14:30:23 UTC.
 
 Archive file contents
