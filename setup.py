@@ -17,7 +17,7 @@ setup(
     maintainer="Ryan Medick",
     maintainer_email="rmedick@pdx.edu",
     url="https://github.com/oresat/oresat-linux-updater",
-    packages=['oresat-linux-updater'],
+    packages=['oresat_linux_updater'],
     install_requires=[
         "apt",
     ],
