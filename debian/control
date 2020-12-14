@@ -4,6 +4,7 @@ Section: python
 Priority: optional
 Build-Depends: python3-setuptools, python3-all, debhelper (>= 9)
 Homepage: https://github.com/oresat/oresat-linux-updater
+
 Package: oresat-linux-updater
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}
