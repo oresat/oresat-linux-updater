@@ -4,7 +4,7 @@ MAJOR = 0
 MINOR = 1
 PATCH = 0
 
-APP_NAME = "oreast-linux-updater"
+APP_NAME = "oresat-linux-updater"
 APP_DESCRIPTION = "A quick wrapper daemon for apt on oresat linux boards."
 APP_VERSION = "{}.{}.{}".format(MAJOR, MINOR, PATCH)
 APP_AUTHOR = "Ryan Medick"

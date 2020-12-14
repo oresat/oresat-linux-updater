@@ -1,0 +1,10 @@
+Source: oreast-linux-updater
+Maintainer: Ryan Medick <rmedick@pdx.edu>
+Section: python
+Priority: optional
+Build-Depends: python3-setuptools, python3-all, debhelper (>= 10)
+Homepage: https://github.com/oresat/oresat-linux-updater
+Package: oreast-linux-updater
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}
+Description: A quick wrapper daemon for apt on oresat linux boards.
