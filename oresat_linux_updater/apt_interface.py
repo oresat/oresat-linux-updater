@@ -25,7 +25,7 @@ class AptInterface():
         Returns
         -------
         bool
-            True if package was installed or False on failure..
+            True if package was installed or False on failure.
         """
 
         deb = debfile.DebPackage(package_path)
@@ -81,6 +81,6 @@ class AptInterface():
                             }
                         apt_list.append(temp)
 
-        apt_json = json.dumps({"packages": apt_list})
+        apt_json = json.dumps(apt_list)
 
         return apt_json

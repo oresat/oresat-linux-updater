@@ -9,10 +9,10 @@ import subprocess
 import shutil
 from datetime import datetime
 from pathlib import Path
-from oresat_updaterd.apt_interface import AptInterface
-from oresat_updaterd.file_cache import FileCache
+from oresat_linux_updater.apt_interface import AptInterface
+from oresat_linux_updater.file_cache import FileCache
 
-_ARCHIVE_FILE_REGEX = r".*_update_\d\d\d\d_\d*_\d*_\d*_\d*_\d*.tar.gz"
+_ARCHIVE_FILE_REGEX = r".*_update_\d\d\d\d_\d*_\d*_\d*_\d*_\d*.tar.xz"
 
 
 class LinuxUpdater():
@@ -123,7 +123,7 @@ class LinuxUpdater():
                     else:
                         # open the archive file
                         logging.debug("untar %s", f)
-                        with tarfile.open(f, "r:gz") as tfile:
+                        with tarfile.open(f, "r:xz") as tfile:
                             tfile.extractall(path=self._working_dir)
 
                     resume = True

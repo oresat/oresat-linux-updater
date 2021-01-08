@@ -19,8 +19,11 @@ setup(
     url="https://github.com/oresat/oresat-linux-updater",
     packages=['oresat_linux_updater'],
     install_requires=[
-        "apt",
+        "pydbus"
     ],
+    entry_points={
+        'console_scripts': ['oresat-updater = oresat_linux_updater.main:main'],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",

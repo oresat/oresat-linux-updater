@@ -1,4 +1,5 @@
 # OreSat Linux Updater
+
 [![License](https://img.shields.io/github/license/oresat/oresat-linux-updater)](./LICENSE)
 [![Issues](https://img.shields.io/github/issues/oresat/oresat-linux-updater)](https://github.com/oresat/oresat-linux-updater/issues)
 ![Unit Tests](https://github.com/oresat/oresat-linux-updater/workflows/oresat-linux-updater/badge.svg)
@@ -10,16 +11,22 @@ instructions.txt file to define the order deb packages are installed, remove,
 or bash scripts are ran.
 
 ## Dependacies
-- `sudo apt install python3 python3-pydbus python3-apt`
 
-## Usage
-- `python3 -m src/oresat_updaterd` To run as a process
-- `python3 -m src/oresat_updaterd -h` For help output
-- `python3 -m src/oresat_updaterd -d` To run as a daemon
-- `python3 -m src/oresat_updaterd -v` Turn on verbose logging
+- `$ sudo apt install python3 python3-pydbus python3-apt libsystemd-dev`
 
 ## Building oresat Debian package
-- `dpkg-buildpackage -uc -us`
+
+`$ dpkg-buildpackage -uc -us`
+
+## Usage
+
+- If install as a Debian package: `$ sudo systemctl start oresat-updaterd`
+- From repo: `$ sudo python3 oresat_linux_updater/main.py`
+- flags:
+  - `-h` For help output
+  - `-d` To run as a daemon
+  - `-v` Turn on verbose logging
 
 ## Unit Tests
-- `PYTHONPATH=".:src/" pytest tests` or `PYTHONPATH=".:src/" pytest-3 tests`
+
+`$ pytest tests` or `$ pytest-3 tests`

@@ -5,9 +5,10 @@ import time
 import os
 import logging
 from enum import Enum
-from oresat_updaterd.linux_updater import LinuxUpdater
+from pydbus.generic import signal
+from oresat_linux_updater.linux_updater import LinuxUpdater
 
-DBUS_INTERFACE_NAME = "org.OreSat.Updater"
+DBUS_INTERFACE_NAME = "org.oresat.updater"
 
 
 class State(Enum):
@@ -39,7 +40,7 @@ class LinuxUpdaterDaemon(object):
 
     dbus = """
     <node>
-        <interface name="org.OreSat.Updater">
+        <interface name="org.oresat.updater">
             <method name='AddArchiveFile'>
                 <arg type='s' name='filepath' direction='in'/>
                 <arg type='b' name='output' direction='out'/>
@@ -47,8 +48,8 @@ class LinuxUpdaterDaemon(object):
             <method name='Update'>
                 <arg type='b' name='output' direction='out'/>
             </method>
-            <method name='GetPackageListFile'>
-                <arg type='s' name='output' direction='out'/>
+            <method name='MakePackageListFile'>
+                <arg type='b' name='output' direction='out'/>
             </method>
             <property name="CurrentStateName" type="s" access="read" />
             <property name="CurrentStateValue" type="d" access="read" />
@@ -56,9 +57,14 @@ class LinuxUpdaterDaemon(object):
             <property name="CurrentInstructionType" type="s" access="read" />
             <property name="CurrentInstructionItem" type="s" access="read" />
             <property name="AvailableArchiveFiles" type="d" access="read" />
+            <signal name="PackageListFile">
+                <arg type='s'/>
+            </signal>
         </interface>
     </node>
     """
+
+    PackageListFile = signal()
 
     # -------------------------------------------------------------------------
     # non-dbus methods
@@ -69,6 +75,9 @@ class LinuxUpdaterDaemon(object):
                  ):
 
         self._updater = LinuxUpdater(working_dir, file_cache_dir)
+
+        # A flag for making a txt file with a list of all packages installed
+        self._make_pkg_list = False
 
         # initial state machine
         if not os.listdir(working_dir):
@@ -105,7 +114,12 @@ class LinuxUpdaterDaemon(object):
         """
 
         while self._running:
-            if self._current_state == State.standby:
+            if self._current_state != State.update and self._make_pkg_list:
+                filepath = self._updater.get_pkg_list_file()
+                self.PackageListFile(filepath)
+                self._make_pkg_list = False
+                continue
+            elif self._current_state == State.standby:
                 time.sleep(1)  # nothing for this thread to do
             elif self._current_state == State.update:
                 ret = self._updater.update()
@@ -116,8 +130,6 @@ class LinuxUpdaterDaemon(object):
             else:  # should not happen
                 logging.error("unknown state in working loop")
                 self._change_state(State.failed)
-
-        return ret
 
     def _change_state(self, new_state: State) -> bool:
         """
@@ -262,17 +274,20 @@ class LinuxUpdaterDaemon(object):
 
         return ret
 
-    def GetPackageListFile(self) -> str:
+    def MakePackageListFile(self) -> str:
         """
-        To get a file with a list of all the files installed.
-        Note: it is up to client to move file.
+        Make a file with a list of all the files installed and their versions.
+        Will use a dbus signal to asynchronously reply.
 
         Returns
         -------
-        str
-            Absolute filepath to file with the list of installed packages.
+        bool
+            True if package list file is being made or False on failure.
         """
-        return self._updater.get_pkg_list_file()
 
-    # -------------------------------------------------------------------------
-    # signals
+        if self._current_state != State.update:
+            self._make_pkg_list = True
+            return False
+
+        return True
+

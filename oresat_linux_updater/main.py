@@ -76,7 +76,7 @@ def usage():
     print(message)
 
 
-if __name__ == "__main__":
+def main():
     DAEMON_FLAG = False
     VERBOSE = False
 
@@ -126,3 +126,7 @@ if __name__ == "__main__":
 
     if DAEMON_FLAG is True:
         os.remove(PID_FILE)  # clean up daemon
+
+
+if __name__ == "__main__":
+    main()
