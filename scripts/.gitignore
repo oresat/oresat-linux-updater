@@ -1,0 +1,4 @@
+build/
+*.txt
+*.deb
+*.tar.gz
