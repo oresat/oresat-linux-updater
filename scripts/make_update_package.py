@@ -9,7 +9,7 @@ import shutil
 from datetime import datetime
 from enum import Enum
 from collections import OrderedDict
-from apt import cache, debfile
+from apt import cache
 
 BUILD_DIR = "build/"
 
@@ -19,16 +19,17 @@ class InstructionType(Enum):
     remove_pkg = 1
     bash_script = 2
 
+
 class UpdateArchiveMaker():
 
     def __init__(self, pkg_list_file: str):
         self.apt_cache = cache.Cache()
         self.pkg_list = {}
         self.instructions = OrderedDict()
+        self.board = pkg_list_file.split("_")[0]
 
         with open(pkg_list_file) as fptr:
-           self.pkg_list = json.load(fptr)
-
+            self.pkg_list = json.load(fptr)
 
     def is_installed(self, package: str) -> bool:
         if package in self.pkg_list or package in self.instructions:
@@ -42,7 +43,7 @@ class UpdateArchiveMaker():
 
         return True
 
-    def get_dependencies(self, package: str, recs = []) -> bool:
+    def get_dependencies(self, package: str, recs=[]) -> bool:
 
         if self.is_installed(package) or package in recs:
             return True
@@ -52,7 +53,7 @@ class UpdateArchiveMaker():
         # virtual package
         if self.apt_cache.is_virtual_package(package):
             pkg_list = self.apt_cache.get_providing_packages(package)
-            for pkg in pkg_list: # find package for virtual package
+            for pkg in pkg_list:  # find package for virtual package
                 if not self.is_installed(pkg.shortname):
                     self.get_dependencies(pkg.shortname, recs)
                     self.instructions[pkg.shortname] = InstructionType.install_pkg
@@ -81,7 +82,7 @@ class UpdateArchiveMaker():
                     self.get_dependencies(name, recs)
                     if not self.apt_cache.is_virtual_package(name):
                         self.instructions[name] = InstructionType.install_pkg
-        
+
         recs.remove(package)
         return True
 
@@ -92,8 +93,7 @@ class UpdateArchiveMaker():
     def make_instruction_txt(self) -> bool:
         data = []
         date_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        myhost = os.uname()[1]
-        filename = myhost + "_pkg-list_" + date_str + ".tar.gz"
+        filename = self.board + "_update_" + date_str + ".tar.gz"
 
         os.mkdir(BUILD_DIR)
 
@@ -111,7 +111,7 @@ class UpdateArchiveMaker():
         with open(BUILD_DIR + "instructions.txt", "w") as fptr:
             json.dump(data, fptr)
 
-        with tarfile.open(filename,"w:gz") as tar:
+        with tarfile.open(filename, "w:gz") as tar:
             for i in os.listdir(BUILD_DIR):
                 tar.add(BUILD_DIR + i, arcname=i)
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     shutil.rmtree(BUILD_DIR, ignore_errors=True)
 
     uam = UpdateArchiveMaker(sys.argv[1])
-    
+
     while True:
         command = input("-> ").split(" ")
 
@@ -150,11 +150,9 @@ if __name__ == "__main__":
             uam.make_instruction_txt()
         elif command[0] == "help":
             usage()
-        elif len(command) == 2: # every command below needs argument
+        elif len(command) == 2:  # every command below needs argument
             if command[0] == "add":
                 uam.add_package(command[1])
-                #for pkg in uam.package_dependencies(command[1]):
-                #    print(pkg)
             elif command[0] == "remove":
                 print("remove")
         else:

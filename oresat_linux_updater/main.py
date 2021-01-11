@@ -77,24 +77,24 @@ def usage():
 
 
 def main():
-    DAEMON_FLAG = False
-    VERBOSE = False
+    daemon_flag = False
+    verbose = False
 
     opts, args = getopt.getopt(sys.argv[1:], "dvh")
     for opt, arg in opts:
         if opt == "-d":
-            DAEMON_FLAG = True
+            daemon_flag = True
         if opt == "-v":
-            VERBOSE = True
+            verbose = True
         elif opt == "-h":
             usage()
             sys.exit(0)
 
-    if DAEMON_FLAG:
+    if daemon_flag:
         daemonize(PID_FILE)
 
     # turn on logging for debug messages
-    if VERBOSE:
+    if verbose:
         logging.basicConfig(
             filename=LOG_FILE,
             level=logging.DEBUG,
@@ -108,7 +108,7 @@ def main():
             )
 
     logging.getLogger().addHandler(logging.StreamHandler())
-    logging.info("verbose %s", str(VERBOSE))
+    logging.info("verbose %s", str(verbose))
 
     # make updater
     updater_daemon = LinuxUpdaterDaemon(WORKING_DIR, FILE_CACHE_DIR)
@@ -124,9 +124,5 @@ def main():
         updater_daemon.quit()
         loop.quit()
 
-    if DAEMON_FLAG is True:
+    if daemon_flag is True:
         os.remove(PID_FILE)  # clean up daemon
-
-
-if __name__ == "__main__":
-    main()

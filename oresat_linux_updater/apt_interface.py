@@ -69,17 +69,13 @@ class AptInterface():
 
         """
 
-        apt_list = []
+        apt_list = {}
 
         for pkg in self._cache:
             if pkg.is_installed:
                 for ver in pkg.versions:
                     if ver.is_installed:
-                        temp = {
-                            "name": pkg.shortname,
-                            "version": ver.version
-                            }
-                        apt_list.append(temp)
+                        apt_list[pkg.shortname] = ver.version
 
         apt_json = json.dumps(apt_list)
 
