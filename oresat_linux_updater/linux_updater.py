@@ -92,7 +92,7 @@ class LinuxUpdater():
         try:
             self._file_cache.add(filepath)
             logging.info("%s was added to cache", filepath)
-        except:
+        except Exception:
             logging.error("failed to add %s to cache", filepath)
             return False
         return True
@@ -222,27 +222,25 @@ class LinuxUpdater():
 
     @property
     def archive_file(self):
-        """The current archive file being used."""
+        """str: The current archive file being used. Readonly"""
         return self._archive_file
 
     @property
     def available_archive_files(self):
-        """The number of archive files in cache"""
+        """int: The number of archive files in cache. Readonly"""
         return len(self._file_cache)
 
     @property
     def instruction_type(self):
-        """
-        The current instuction type. i.e.: install_pkg, remove_pkg, bash_script
+        """str: The current instuction type. i.e. install_pkg, remove_pkg,
+        bash_script. Readonly
         """
         return self._instruction_type
 
     @property
     def instruction_item(self):
-        """
-        The current instuction item. i,e,:
-        - the *.deb file being install
-        - the name of the package being removed
-        - the name of the bashscrip being run
+        """str: The current instuction item. i.e. the name of .deb file being
+        install, the name of the package being removed, or the name of the
+        bashs cript being run. Readonly
         """
         return self._instruction_item

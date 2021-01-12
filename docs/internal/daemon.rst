@@ -1,8 +1,7 @@
 Daemon
 ======
 
-.. autoclass:: src.daemon.State
-    :members:
+.. autoclass:: oresat_linux_updater.linux_updater_daemon.State
 
-.. autoclass:: src.daemon.Daemon
+.. autoclass:: oresat_linux_updater.linux_updater_daemon.LinuxUpdaterDaemon
     :members:

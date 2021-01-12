@@ -18,9 +18,9 @@ from oresat_linux_updater.linux_updater_daemon import DBUS_INTERFACE_NAME
 def daemonize(pid_file: str):
     """Daemonize the process
 
-    Attributes
+    Parameters
     ----------
-    PID_FILE: str
+    pid_file: str
         The path to the pid file for the daemon.
     """
 
@@ -66,7 +66,7 @@ def daemonize(pid_file: str):
 
 
 def usage():
-    """Arg message"""
+    """Print the arguement usage message"""
     message = """
         usage:\n
         python3 ultra.py      : to run as a process.
@@ -77,6 +77,7 @@ def usage():
 
 
 def main():
+    """The main for the oresat linux updater daemon"""
     daemon_flag = False
     verbose = False
 
@@ -126,3 +127,5 @@ def main():
 
     if daemon_flag is True:
         os.remove(PID_FILE)  # clean up daemon
+
+    return 0

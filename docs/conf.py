@@ -63,6 +63,6 @@ html_static_path = []
 intersphinx_mapping = {'python': ('https://docs.python.org/3/', None)}
 
 # So sphinx can build docs without required libs installed.
-autodoc_mock_imports = ["pydbus","apt"]
+autodoc_mock_imports = ["pydbus", "apt"]
 
 autoclass_content = 'both'

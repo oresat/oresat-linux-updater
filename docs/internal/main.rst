@@ -2,5 +2,5 @@
 Main
 ====
 
-.. automodule:: src.main
+.. automodule:: oresat_linux_updater.main
     :members:

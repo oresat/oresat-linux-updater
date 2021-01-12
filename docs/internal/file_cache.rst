@@ -2,5 +2,5 @@
 File Cache
 ==========
 
-.. autoclass:: src.file_cache.FileCache
+.. autoclass:: oresat_linux_updater.file_cache.FileCache
     :members:

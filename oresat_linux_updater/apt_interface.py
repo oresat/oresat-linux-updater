@@ -6,16 +6,16 @@ from apt import cache, debfile
 
 class AptInterface():
     """
-    Manges commication to apt using the python apt library.
-    https://apt-team.pages.debian.net/python-apt/contents.html
+    Manges commication to apt using the python apt library. See
+    https://apt-team.pages.debian.net/python-apt/contents.html for python-apt's
+    API.
     """
 
     def __init__(self):
         self._cache = cache.Cache()
 
     def install(self, package_path: str) -> bool:
-        """
-        Installs local deb package.
+        """Installs local deb package.
 
         Parameters
         ----------
@@ -35,18 +35,17 @@ class AptInterface():
         return True
 
     def remove(self, pkg_name: str) -> bool:
-        """
-        Removes a package.
+        """Removes a package, equivant to `apt remove <pkg_name>`.
 
         Parameters
         ----------
-        package_names : str
+        pkg_name : str
             A package to remove.
 
         Returns
         -------
         bool
-            True if all packages were removed or False on failure.
+            True if the package was removed or False on failure.
         """
 
         package = self._cache[pkg_name]
@@ -59,13 +58,14 @@ class AptInterface():
         return True
 
     def package_list(self) -> str:
-        """
-        Make a list with all package currently installed.
+        """Make a JSON str with a list of all packages currently installed.
 
         Returns
         -------
         str
-            A JSON list of package and their versions that are installed.
+            A JSON dictionary of packages and their versions that are
+            installed. The key is the package name and value is the package
+            version.
 
         """
 

@@ -2,5 +2,5 @@
 Apt Interface
 =============
 
-.. autoclass:: src.apt_interface.AptInterface
+.. autoclass:: oresat_linux_updater.apt_interface.AptInterface
     :members:

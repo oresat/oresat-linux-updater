@@ -1,5 +1,5 @@
 Linux Updater
 =============
 
-.. autoclass:: src.linux_updater.LinuxUpdater
+.. autoclass:: oresat_linux_updater.linux_updater.LinuxUpdater
     :members:

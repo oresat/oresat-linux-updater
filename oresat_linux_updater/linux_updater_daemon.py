@@ -36,6 +36,13 @@ class LinuxUpdaterDaemon(object):
     machine, and logger ontop the linux_updater. Sets up two threads, one for
     the dbus server and one for the Linux updater. Having two threads allow
     commands to the daemon to handle asynchronously.
+
+    Parameters
+    ----------
+    working_dir: str
+        Filepath to working directory.
+    file_cache_dir: str
+        Filepath to file cache directory.
     """
 
     dbus = """
