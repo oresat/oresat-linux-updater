@@ -2,51 +2,32 @@
 
 import os
 import shutil
+import json
 from pathlib import Path
 
 
 class FileCache():
-    """
-    Used to store the archvive files sent to the linux updater.
+    """Used to store the update archive files sent to the linux updater."""
 
-    Attributes
-    ----------
-    _cache_path: str
-        The absolute path to the cache directory.
-    _cache_len: int
-        The number of files in the cache directory.
-    """
-
-    def __init__(self, cache_dir_path: str):
+    def __init__(self, cache_dir: str):
         """
-        parameters
+        Parameters
         ----------
-        cache_dir_file : str
+        cache_dir: str
             The path to a directory for the cache.
-
-        Raise
-        -----
-        AttributeError
-            The cache_dir_path is empty
         """
-
-        if cache_dir_path == "":
-            raise AttributeError("No cache directory")
 
         # If the directory does not make it
-        Path(cache_dir_path).mkdir(parents=True, exist_ok=True)
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
 
-        # a / to end of cache_dir_path incase it's missing.
-        if cache_dir_path[-1] != '/':
-            cache_dir_path += '/'
+        # a / to end of cache_dir_dir incase it's missing.
+        if cache_dir[-1] != '/':
+            cache_dir += '/'
 
-        # Set attributes
-        self._cache_path = cache_dir_path
-        self._cache_len = len(os.listdir(self._cache_path))
+        self._cache_dir = cache_dir
 
-    def __len__(self):
-        """
-        Gets the number of files in the cache.
+    def __len__(self) -> int:
+        """Gets the number of files in the cache.
 
         Returns
         -------
@@ -54,100 +35,84 @@ class FileCache():
             The number file in the cache.
         """
 
-        return self._cache_len
+        return len(os.listdir(self._cache_dir))
 
-    def add(self, file_path: str):
-        """
-        Add a file to the cache.
-        correct format.
+    def add(self, file_dir: str):
+        """Copy the file into cache.
 
         Parameters
         ----------
-        file_path : str
+        file_dir: str
             Path to a file to add to the cache.
 
-        Raise
-        -----
-        OSError
-            File input error
-
-        Returns
-        -------
-        bool
-            True if file was added or False if file was not added
+        Raises
+        ------
+        FileNotFoundError
         """
 
-        if not os.path.isfile(file_path):
-            msg = file_path + " not found"
-            raise OSError(msg)
+        filename = os.path.basename(file_dir)
 
-        filename = os.path.basename(file_path)
+        shutil.copyfile(file_dir, self._cache_dir + filename)
 
-        shutil.copyfile(file_path, self._cache_path + filename)
-        self._cache_len = len(os.listdir(self._cache_path))
-
-        return True
-
-    def get(self, dir_path: str):
-        """
-        Copy the file from the cache to dir_path.
+    def get(self, path_dir: str) -> str:
+        """Copy the file from the cache to dir_dir.
 
         Parameters
         ----------
-        dir_path : str
+        path_dir : str
             Absolute path to a directory to add the old file.
 
         Returns
         -------
         str
             Path to new file.
+        None
+            No files in cache.
         """
 
-        if not os.path.isdir(dir_path):
-            msg = dir_path + " is not a vaild path"
-            raise IOError(msg)
+        # add a '/' to end of dir_dir incase it's missing.
+        if path_dir[-1] != '/':
+            path_dir += '/'
 
-        # a / to end of dir_path incase it's missing.
-        if dir_path[len(dir_path) - 1] != '/':
-            dir_path += '/'
+        file_list = os.listdir(self._cache_dir)
 
-        if self._cache_len <= 0:
+        if file_list is None or len(file_list) <= 0:
             return None  # cache is empty
 
-        file_list = file_list = os.listdir(self._cache_path)
+        archvice_filepath = self._cache_dir + file_list[0]
+        new_file = path_dir + file_list[0]
+        shutil.copyfile(archvice_filepath, new_file)
 
-        if file_list:
-            file_list.sort()
-            archvice_filepath = self._cache_path + file_list[0]
-        else:
-            return None  # no files
-
-        ret = shutil.copyfile(archvice_filepath, dir_path + file_list[0])
-        return ret
+        return new_file
 
     def remove(self, filename: str):
-        """
-        Gets the number of files in the cache.
+        """Removes a sepecific file from the cache.
 
         Parameters
         ----------
         filepath : str
             Archive filename to delete from cache.
 
-        Returns
-        -------
-        bool
-            True if the remove worked otherwise False on failure.
+        Raises
+        ------
+        FileNotFoundError
         """
 
-        os.remove(self._cache_path + filename)
-        return True
+        os.remove(self._cache_dir + filename)
 
     def remove_all(self):
-        """
-        Delete all files in the cache.
+        """Delete all files in the cache."""
+
+        shutil.rmtree(self._cache_dir, ignore_errors=True)
+        Path(self._cache_dir).mkdir(parents=True, exist_ok=True)
+
+    def json_str(self) -> str:
+        """Makes a JSON str with the list of files in the cache.
+
+        Returns
+        -------
+        str
+            A JSON str with a list of the files in the cache.
         """
 
-        shutil.rmtree(self._cache_path)
-        Path(self._cache_path).mkdir(parents=True, exist_ok=True)
-        return True
+        return json.dumps(os.listdir(self._cache_dir).sort())

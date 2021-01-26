@@ -6,16 +6,12 @@ import getopt
 import logging
 from pydbus import SystemBus
 from gi.repository import GLib
-from oresat_linux_updater import FILE_CACHE_DIR
-from oresat_linux_updater import LOG_FORMAT
-from oresat_linux_updater import LOG_FILE
-from oresat_linux_updater import PID_FILE
-from oresat_linux_updater import WORKING_DIR
-from oresat_linux_updater.linux_updater_daemon import LinuxUpdaterDaemon
-from oresat_linux_updater.linux_updater_daemon import DBUS_INTERFACE_NAME
+from logging.handlers import SysLogHandler
+from oresat_linux_updater.updater_daemon import UpdaterDaemon, \
+        DBUS_INTERFACE_NAME
 
 
-def daemonize(pid_file: str):
+def _daemonize(pid_file: str):
     """Daemonize the process
 
     Parameters
@@ -32,7 +28,7 @@ def daemonize(pid_file: str):
         pid = None
 
     if pid:
-        sys.stderr.write("pid file {0} already exist.\n".format(PID_FILE))
+        sys.stderr.write("pid file {0} already exist".format(pid_file))
         sys.exit(1)
 
     try:
@@ -52,16 +48,16 @@ def daemonize(pid_file: str):
     # redirect standard file descriptors
     sys.stdout.flush()
     sys.stderr.flush()
-    si = open(os.devnull, 'r')
-    so = open(os.devnull, 'a+')
-    se = open(os.devnull, 'a+')
+    stdin = open(os.devnull, 'r')
+    stdout = open(os.devnull, 'a+')
+    stderr = open(os.devnull, 'a+')
 
-    os.dup2(si.fileno(), sys.stdin.fileno())
-    os.dup2(so.fileno(), sys.stdout.fileno())
-    os.dup2(se.fileno(), sys.stderr.fileno())
+    os.dup2(stdin.fileno(), sys.stdin.fileno())
+    os.dup2(stdout.fileno(), sys.stdout.fileno())
+    os.dup2(stderr.fileno(), sys.stderr.fileno())
 
     pid = str(os.getpid())
-    with open(PID_FILE, 'w+') as fptr:
+    with open(pid_file, 'w+') as fptr:
         fptr.write(pid + '\n')
 
 
@@ -69,20 +65,24 @@ def usage():
     """Print the arguement usage message"""
     message = """
         usage:\n
-        python3 ultra.py      : to run as a process.
-        python3 ultra.py -d   : to run as a daemon.
-        python3 ultra.py -h   : this message.
+        python3 -m oresat_linux_updater
+
+        flags
+        -d : to run as a process.
+        -v : to on verbose logging.
+        -h : this message.
         """
     print(message)
 
 
 def main():
     """The main for the oresat linux updater daemon"""
+    pid_file = "/run/oresat-linux-updaterd.pid"
     daemon_flag = False
     verbose = False
 
-    opts, args = getopt.getopt(sys.argv[1:], "dvh")
-    for opt, arg in opts:
+    opts, _ = getopt.getopt(sys.argv[1:], "dvh")
+    for opt, _ in opts:
         if opt == "-d":
             daemon_flag = True
         if opt == "-v":
@@ -92,27 +92,23 @@ def main():
             sys.exit(0)
 
     if daemon_flag:
-        daemonize(PID_FILE)
+        _daemonize(pid_file)
+        log_handler = SysLogHandler(address="/dev/log")
+    else:
+        log_handler = logging.StreamHandler(sys.stderr)
 
     # turn on logging for debug messages
     if verbose:
-        logging.basicConfig(
-            filename=LOG_FILE,
-            level=logging.DEBUG,
-            format=LOG_FORMAT
-            )
+        level = logging.DEBUG
     else:
-        logging.basicConfig(
-            filename=LOG_FILE,
-            level=logging.INFO,
-            format=LOG_FORMAT
-            )
+        level = logging.INFO
 
-    logging.getLogger().addHandler(logging.StreamHandler())
-    logging.info("verbose %s", str(verbose))
+    logging.basicConfig(level=level, handlers=[log_handler])
+
+    log = logging.getLogger('oresat-linux-updater')
 
     # make updater
-    updater_daemon = LinuxUpdaterDaemon(WORKING_DIR, FILE_CACHE_DIR)
+    updater_daemon = UpdaterDaemon("/tmp/", "/var/cache/", log)
 
     # set up dbus wrapper
     bus = SystemBus()
@@ -120,12 +116,17 @@ def main():
     loop = GLib.MainLoop()
 
     try:
+        updater_daemon.start()
         loop.run()
     except KeyboardInterrupt:
         updater_daemon.quit()
         loop.quit()
+    except Exception as exc:
+        log.critical(exc)
+        updater_daemon.quit()
+        loop.quit()
 
-    if daemon_flag is True:
-        os.remove(PID_FILE)  # clean up daemon
+    if daemon_flag:
+        os.remove(pid_file)  # clean up daemon
 
     return 0

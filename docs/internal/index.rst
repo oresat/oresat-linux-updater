@@ -1,12 +1,11 @@
-========================
-Linux Updater's Internal
-========================
+OreSat Linux Updater's Internal
+===============================
 
 .. toctree::
     :maxdepth: 2
 
-    apt_interface
-    daemon
+    instruction
+    instructions_list
     file_cache
-    linux_updater
+    updater_daemon
     main
