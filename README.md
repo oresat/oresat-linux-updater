@@ -1,6 +1,7 @@
 # OreSat Linux Updater
 
 [![License](https://img.shields.io/github/license/oresat/oresat-linux-updater)](./LICENSE)
+![Pytest](https://github.com/oresat/oresat-linux-updater/workflows/Pytest/badge.svg)
 [![Issues](https://img.shields.io/github/issues/oresat/oresat-linux-updater)](https://github.com/oresat/oresat-linux-updater/issues)
 
 This is a daemon available on on all OreSat Linux board and will allow any the
