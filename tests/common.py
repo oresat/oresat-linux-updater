@@ -1,5 +1,6 @@
 """common global variables for all tests"""
 
+import os
 import sys
 import logging
 
@@ -10,9 +11,9 @@ LOGGER.setLevel(logging.DEBUG)
 LOGGER.addHandler(logging.StreamHandler(sys.stderr))
 
 # test directories
-TEST_CACHE_DIR = "./test_cache_dir/"
-TEST_WORK_DIR = "./test_work_dir/"
-TEST_FILE_DIR = "./test_files/"
+TEST_CACHE_DIR = "test_cache_dir/"
+TEST_WORK_DIR = "test_work_dir/"
+TEST_FILE_DIR = os.path.dirname(__file__) + "/test_files/"
 
 # test deb files
 TEST_DEB_PKG1 = "test-package1_0.1.0-0_all.deb"

@@ -144,3 +144,5 @@ cython_debug/
 *.substvars
 debian/oresat-linux-updater/
 debian/files
+test_cache_dir/
+test_work_dir/
