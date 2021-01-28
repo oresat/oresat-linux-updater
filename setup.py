@@ -22,7 +22,7 @@ setup(
         "pydbus"
     ],
     entry_points={
-        'console_scripts': ['oresat-updater = oresat_linux_updater.main:main'],
+        'console_scripts': ['oresat-linux-updater = oresat_linux_updater.daemon_main:main'],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
