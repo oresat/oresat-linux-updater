@@ -4,11 +4,13 @@ on:
   push:
       branches: [ master ]
       paths:
-      - 'debian/'
       - 'oresat_linux_updater/'
       - 'tests/'
   pull_request:
     branches: [ master ]
+      paths:
+      - 'oresat_linux_updater/'
+      - 'tests/'
 
 
 jobs:
