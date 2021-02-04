@@ -7,9 +7,9 @@ import sys
 import os
 import getopt
 import logging
+from logging.handlers import SysLogHandler
 from pydbus import SystemBus
 from gi.repository import GLib
-from logging.handlers import SysLogHandler
 from oresat_linux_updater.daemon import Daemon, DBUS_INTERFACE_NAME
 
 
