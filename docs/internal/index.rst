@@ -5,7 +5,7 @@ OreSat Linux Updater's Internal
     :maxdepth: 2
 
     instruction
-    instructions_list
-    file_cache
-    updater_daemon
+    update
+    olm_file
+    daemon
     main

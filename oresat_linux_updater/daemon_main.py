@@ -1,4 +1,7 @@
-"""Main for the linux updater"""
+"""Main for the oresat linux updater daemon.
+
+Handles all arguement parsing, forking, log handling.
+"""
 
 import sys
 import os
@@ -7,8 +10,7 @@ import logging
 from pydbus import SystemBus
 from gi.repository import GLib
 from logging.handlers import SysLogHandler
-from oresat_linux_updater.updater_daemon import UpdaterDaemon, \
-        DBUS_INTERFACE_NAME
+from oresat_linux_updater.daemon import Daemon, DBUS_INTERFACE_NAME
 
 
 def _daemonize(pid_file: str):
@@ -108,7 +110,9 @@ def main():
     log = logging.getLogger('oresat-linux-updater')
 
     # make updater
-    updater_daemon = UpdaterDaemon("/tmp/", "/var/cache/", log)
+    work_dir = "/tmp/oresat_linux_updater/"
+    cache = "/var/cache/oresat_linux_manager/"
+    updater_daemon = Daemon(work_dir, cache, log)
 
     # set up dbus wrapper
     bus = SystemBus()

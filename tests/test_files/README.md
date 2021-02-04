@@ -18,23 +18,22 @@ different txt file) that depends on test-package1
 
 ## Valid Updates
 
-- **test_update_2021-01-01-00-00-00.tar.xz** - Installs test-package1 and
-test-package2 then run a bash script.
-- **test_update_2021-01-01-01-01-01.tar.xz** - Removes test-package2 and
+- **test_update_1611940000.txt** - Installs test-package1 and test-package2
+then run a bash script.
+- **test_update_1611941111.tar.xz** - Removes test-package2 and
 test-package1.
+- **test_update_1611942222.tar.xz** - Only installs test-package2.
 
 ## Invalid Updates
 
-- **test_update_2021-01-01-02-02-02.tar.xz** - invalid .tar.xz file
-- **test_update_2021-01-01-03-03-03.tar.xz** - missing instructions.txt in tar
-- **test_update_2021-01-01-04-04-04.tar.xz** - missing .deb file in tar
-- **test_update_2021-01-01-05-05-05.tar.xz** - missing script in tar
-- **test_update_2021-01-01-06-06-06.tar.xz** - invalid JSON contexts from
-instructions.txt
-- **test_update_2021-01-01-07-07-07.tar.xz** - invalid instructions.txt format
-(not a JSON)
+- **test_update_1611943333.tar.xz** - missing instructions.txt in tar
+- **test_update_1611944444.tar.xz** - missing .deb file in tar
+- **test_update_1611945555.tar.xz** - missing script in tar
+- **test_update_1611946666.tar.xz** - invalid JSON contexts from instructions.txt
+- **test_update_1611947777.tar.xz** - invalid instructions.txt format (not a JSON)
+- **test_update_1611948888.tar.xz** - invalid .tar.xz file
 - **test_update.tar.xz** - invalid filename format
 
 ## dpkg status file
 
-- **test_dpkg-status_2020-01-24-00-02-57.txt**
+- **test_dpkg-status_1611940000.txt**

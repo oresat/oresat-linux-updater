@@ -12,5 +12,3 @@ APP_AUTHOR = "Ryan Medick"
 APP_EMAIL = "rmedick@pdx.edu"
 APP_URL = "https://github.com/oresat/oresat-linux-updater"
 APP_LICENSE = "GPL-3.0"
-
-INST_FILE = "instructions.txt"

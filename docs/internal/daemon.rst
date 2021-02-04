@@ -1,16 +1,16 @@
 Updater Daemon
 ==============
 
-.. autoclass:: oresat_linux_updater.updater_daemon.State
+.. autoclass:: oresat_linux_updater.daemon.State
    :show-inheritance:
    :members:
    :member-order: bysource
 
-.. autoclass:: oresat_linux_updater.updater_daemon.Result
+.. autoclass:: oresat_linux_updater.daemon.Result
    :show-inheritance:
    :members:
    :member-order: bysource
 
-.. autoclass:: oresat_linux_updater.updater_daemon.UpdaterDaemon
+.. autoclass:: oresat_linux_updater.daemon.Daemon
    :members:
    :private-members:
