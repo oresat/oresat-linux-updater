@@ -2,9 +2,14 @@ name: unit tests
 
 on:
   push:
-    branches: [ master ]
+      branches: [ master ]
+      paths:
+      - 'debian/'
+      - 'oresat_linux_updater/'
+      - 'tests/'
   pull_request:
     branches: [ master ]
+
 
 jobs:
   build:
