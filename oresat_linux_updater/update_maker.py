@@ -4,12 +4,11 @@ import sys
 from os import listdir, remove
 from os.path import isfile
 from pathlib import Path
+from oresat_linux_updater.olm_file import OLMFile
+from oresat_linux_updater.instruction import Instruction, InstructionType
+from oresat_linux_updater.update_archive import create_update_file
+from oresat_linux_updater.status_archive import read_dpkg_status_file
 from apt.cache import Cache
-from olm_file import OLMFile
-from instruction import Instruction, InstructionType
-from update import create_update_file
-from status_archive import DPKG_STATUS_KEYWORD, read_dpkg_status_file, \
-        read_olu_status_file
 
 OLU_DIR = str(Path.home()) + "/.oresat_linux_updater/"
 ROOT_DIR = OLU_DIR + "root/"

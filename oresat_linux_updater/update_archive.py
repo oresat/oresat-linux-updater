@@ -1,4 +1,4 @@
-"""Everything need to make and extract an OreSat Linux update file and its
+"""Everything need to make and extract an OreSat Linux update archive and its
 instructions file
 """
 
@@ -6,9 +6,9 @@ import json
 import tarfile
 from os import remove
 from os.path import abspath, basename, isfile
-from instruction import Instruction, InstructionError, InstructionType, \
-        INSTRUCTIONS_WITH_FILES
-from olm_file import OLMFile
+from oresat_linux_updater.instruction import Instruction, InstructionError, \
+        InstructionType, INSTRUCTIONS_WITH_FILES
+from oresat_linux_updater.olm_file import OLMFile
 
 INST_FILE = "instructions.txt"
 """The instructions file that is always in a OreSat Linux update. It defines
@@ -17,7 +17,7 @@ the order instructions are ran in.
 
 
 class UpdateError(Exception):
-    """An error occurred when creating or extracting a update file."""
+    """An error occurred when creating or extracting a update archive."""
 
 
 def write_instructions_file(inst_list: list, path_dir) -> str:
@@ -46,7 +46,6 @@ def write_instructions_file(inst_list: list, path_dir) -> str:
     inst_file = path_dir + INST_FILE
 
     for inst in inst_list:
-        print(inst)
         if inst.type in INSTRUCTIONS_WITH_FILES:
             items = []
             for i in inst.items:
@@ -58,7 +57,7 @@ def write_instructions_file(inst_list: list, path_dir) -> str:
 
     # make instructions file
     with open(inst_file, "w") as fptr:
-        json.dump(inst_data, fptr)
+        fptr.write(json.dumps(inst_data))
 
     return inst_file
 
@@ -68,8 +67,8 @@ def read_instructions_file(inst_file: str, work_dir: str) -> str:
 
     Parameters
     ----------
-    update_file: str
-        Path to the update file.
+    update_archive: str
+        Path to the update archive.
     work_dir: str
         The directory to open the tarfile in.
 
@@ -121,9 +120,10 @@ def read_instructions_file(inst_file: str, work_dir: str) -> str:
     return inst_list
 
 
-def create_update_file(board: str, inst_list: dict, work_dir: str) -> str:
+def create_update_archive(board: str, inst_list: dict, work_dir: str,
+                          consume_files=True) -> str:
     """Makes the tar from a list of instructions. This will consume all files
-    if a valid update file is made.
+    if a valid update archive is made.
 
     Parameters
     ----------
@@ -133,6 +133,8 @@ def create_update_file(board: str, inst_list: dict, work_dir: str) -> str:
         A list of instruction dictionaries.
     work_dir: str
         The directory to make the tar in.
+    consume: bool
+        A flag if the file should be consumed.
 
     Raises
     ------
@@ -165,27 +167,28 @@ def create_update_file(board: str, inst_list: dict, work_dir: str) -> str:
         for item in files:
             tar.add(item, arcname=basename(item))
 
-    # delete files
-    for item in files:
-        remove(item)
+    if consume_files:
+        # delete files
+        for item in files:
+            remove(item)
 
     return work_dir + update.name
 
 
-def extract_update_file(update_file: str, work_dir: str) -> str:
+def extract_update_archive(update_archive: str, work_dir: str) -> str:
     """Open the update archive file.
 
     Parameters
     ----------
-    update_file: str
-        Path to the update file.
+    update_archive: str
+        Path to the update archive.
     work_dir: str
         The directory to open the tarfile in.
 
     Raises
     ------
     UpdateError
-        Invalid update file.
+        Invalid update archive.
 
     Returns
     -------
@@ -195,14 +198,14 @@ def extract_update_file(update_file: str, work_dir: str) -> str:
 
     work_dir = abspath(work_dir) + "/"
 
-    if not is_update_file(update_file):
+    if not is_update_archive(update_archive):
         raise UpdateError("Update file does not follow OLM filename standards")
 
     try:
-        with tarfile.open(update_file, "r:xz") as tptr:
+        with tarfile.open(update_archive, "r:xz") as tptr:
             tptr.extractall(work_dir)
     except tarfile.TarError:
-        raise UpdateError("Invalid update file")
+        raise UpdateError("Invalid update archive")
 
     try:
         inst_list = read_instructions_file(work_dir + INST_FILE, work_dir)
@@ -219,8 +222,13 @@ def extract_update_file(update_file: str, work_dir: str) -> str:
     return inst_list
 
 
-def is_update_file(update_file: str) -> bool:
-    """Check to see if the input is a valid update file.
+def is_update_archive(update_archive: str) -> bool:
+    """Check to see if the input is a valid update archive.
+
+    Parameters
+    ----------
+    update_archive: str
+        Path to the update archive.
 
     Returns
     -------
@@ -229,7 +237,7 @@ def is_update_file(update_file: str) -> bool:
     """
 
     try:
-        fptr = OLMFile(load=update_file)
+        fptr = OLMFile(load=update_archive)
     except Exception:
         return False
 

@@ -1,4 +1,4 @@
-"""tests for the UpdaterDaemon class"""
+"""tests for the Instruction class"""
 
 import pytest
 from oresat_linux_updater.instruction import Instruction, InstructionType, \
@@ -39,4 +39,4 @@ def test_run_instruction():
     # multiple install/remove/purge
     Instruction(InstructionType.DPKG_INSTALL, [TEST_DEB_PKG1, TEST_DEB_PKG2]).run(LOGGER)
     Instruction(InstructionType.DPKG_REMOVE, [TEST_DEB_PKG1_NAME, TEST_DEB_PKG2_NAME]).run(LOGGER)
-    Instruction(InstructionType.DPKG_REMOVE, [TEST_DEB_PKG1_NAME]).run(LOGGER) # cleanup
+    Instruction(InstructionType.DPKG_REMOVE, [TEST_DEB_PKG1_NAME]).run(LOGGER)  # cleanup

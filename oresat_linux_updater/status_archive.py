@@ -1,10 +1,10 @@
 """File for creating status archive or existing files from staus archives."""
 
 import json
+import tarfile
 from os import listdir, remove
 from os.path import basename, isfile, isdir
-import tarfile
-from olm_file import OLMFile
+from oresat_linux_updater.olm_file import OLMFile
 
 OLU_STATUS_KEYWORD = "olu-status"
 DPKG_STATUS_KEYWORD = "dpkg-status"
@@ -70,6 +70,13 @@ def make_status_archive(update_cache_dir: str, dpkg_status=False) -> str:
     """Make status tar file with a copy of the dpkg status file and a file
     with the list of updates in cache.
 
+    Parameters
+    ----------
+    update_cache_dir: str
+        Path to the update archive cache.
+    dpkg_status: bool
+        Include the dpkg status file to update archive.
+
     Raises
     ------
     FileNotFoundError
@@ -81,9 +88,9 @@ def make_status_archive(update_cache_dir: str, dpkg_status=False) -> str:
     """
 
     # make sure all files and dirs exist
-    if isdir(update_cache_dir):
+    if not isdir(update_cache_dir):
         raise FileNotFoundError("{} is missing".format(update_cache_dir))
-    if dpkg_status and isfile(DPKG_STATUS_FILE):
+    if dpkg_status and not isfile(DPKG_STATUS_FILE):
         raise FileNotFoundError("{} is missing".format(DPKG_STATUS_FILE))
 
     # make the filenames

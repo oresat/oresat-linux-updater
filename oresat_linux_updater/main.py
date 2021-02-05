@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 from logging.handlers import SysLogHandler
 from pydbus import SystemBus
 from gi.repository import GLib
-from daemon import Daemon, DBUS_INTERFACE_NAME
+from oresat_linux_updater.updater import Updater, DBUS_INTERFACE_NAME
 
 
 CACHE_DIR = "/var/cache/oresat_linux_manager/"
@@ -117,22 +117,22 @@ def main():
     log = logging.getLogger('oresat-linux-updater')
 
     # make updater
-    updater_daemon = Daemon(args.work_dir, args.cache, log)
+    updater = Updater(args.work_dir, args.cache, log)
 
     # set up dbus wrapper
     bus = SystemBus()
-    bus.publish(DBUS_INTERFACE_NAME, updater_daemon)
+    bus.publish(DBUS_INTERFACE_NAME, updater)
     loop = GLib.MainLoop()
 
     try:
-        updater_daemon.start()
+        updater.start()
         loop.run()
     except KeyboardInterrupt:
-        updater_daemon.quit()
+        updater.quit()
         loop.quit()
     except Exception as exc:
         log.critical(exc)
-        updater_daemon.quit()
+        updater.quit()
         loop.quit()
         ret = 1
 
@@ -140,7 +140,3 @@ def main():
         os.remove(pid_file)  # clean up daemon
 
     return ret
-
-
-if __name__ == "__main__":
-    main()

@@ -1,8 +1,8 @@
 """Linux updater daemon"""
 
+import json
 import logging
 import tarfile
-import json
 from time import sleep
 from os import listdir
 from os.path import abspath, basename
@@ -11,10 +11,10 @@ from pathlib import Path
 from enum import IntEnum, auto
 from threading import Thread, Lock
 from pydbus.generic import signal
-from olm_file import OLMFile
-from status_archive import make_status_archive
-from update import extract_update_file, is_update_file, UpdateError, \
-        InstructionError
+from oresat_linux_updater.olm_file import OLMFile
+from oresat_linux_updater.status_archive import make_status_archive
+from oresat_linux_updater.update_archive import extract_update_archive, \
+        is_update_archive, UpdateError, InstructionError
 
 
 DBUS_INTERFACE_NAME = "org.oresat.updater"
@@ -54,29 +54,29 @@ class Result(IntEnum):
     """
 
 
-class Daemon():
-    """The class for the oresat linux updater daemon. All D-Bus methods,
-    properties, and signals follow Pascal case naming.
+class Updater():
+    """The oresat linux updater. All D-Bus methods, properties, and signals
+    follow Pascal case naming.
     """
 
     dbus = """
     <node>
         <interface name="org.oresat.updater">
-            <method name='AddUpdateFile'>
-                <arg type='s' name='update_file' direction='in'/>
+            <method name='AddUpdateArchive'>
+                <arg type='s' name='update_archive' direction='in'/>
                 <arg type='b' name='output' direction='out'/>
             </method>
             <method name='Update'>
                 <arg type='b' name='output' direction='out'/>
             </method>
-            <method name='MakeStatusFile'>
+            <method name='MakeStatusArchive'>
                 <arg type='b' name='output' direction='out'/>
             </method>
             <property name="StatusName" type="s" access="read" />
             <property name="StatusValue" type="y" access="read" />
-            <property name="UpdateFile" type="s" access="read" />
-            <property name="AvailableUpdateFiles" type="u" access="read" />
-            <signal name="StatusFile">
+            <property name="UpdateArchive" type="s" access="read" />
+            <property name="AvailableUpdateArchives" type="u" access="read" />
+            <signal name="StatusArchive">
                 <arg type='s'/>
             </signal>
             <signal name="UpdateResult">
@@ -87,7 +87,7 @@ class Daemon():
     """  # doesn't work in __init__()
 
     # dbus signals
-    StatusFile = signal()
+    StatusArchive = signal()
     UpdateResult = signal()
 
     # -------------------------------------------------------------------------
@@ -102,17 +102,18 @@ class Daemon():
         Parameters
         ----------
         work_dir: str
-            Filepath to working directory.
+            Archivepath to working directory.
         cache_dir: str
-            Filepath to update file cache directory.
+            Archivepath to update archive cache directory.
         logger: logging.Logger
             The logger object to use.
 
         Attributes
         ----------
-        StatusFile: str
+        StatusArchive: str
             D-Bus signal with a str that will sent the absolute path to the
-            updater status file after the MakeStatusFile dbus method is called.
+            updater status file after the MakeStatusArchive dbus method is
+            called.
         UpdateResult: uint8
             D-Bus signal with a :class:`Result` value that will be sent after
             an update has finished or failed.
@@ -120,20 +121,20 @@ class Daemon():
 
         self._log = logger
 
-        # make update_files for cache dir
+        # make update_archives for cache dir
         Path(cache_dir).mkdir(parents=True, exist_ok=True)
         self._cache_dir = abspath(cache_dir) + "/"
         self._log.debug("cache dir " + self._cache_dir)
         self._cache = listdir(self._cache_dir)
         self._cache.sort(reverse=True)
 
-        # make update_files for work dir
+        # make update_archives for work dir
         Path(work_dir).mkdir(parents=True, exist_ok=True)
         self._work_dir = abspath(work_dir) + "/"
         self._log.debug("work dir " + self._work_dir)
 
         self._status = State.STANDBY
-        self._update_file = ""
+        self._update_archive = ""
         self._lock = Lock()
 
         # set up working thread
@@ -174,7 +175,7 @@ class Daemon():
                 self.UpdateResult(ret)
             elif self._status == State.STATUS_FILE:
                 ret = make_status_archive(self._cache_dir, True)
-                self.StatusFile(ret)
+                self.StatusArchive(ret)
             else:
                 sleep(0.1)  # nothing for this thread to do
 
@@ -189,8 +190,8 @@ class Daemon():
         ----------
         resume: bool
             A flag for resuming update. If set to True, the it will try to find
-            a update file in work dir. Otherwise if set to False, it will try
-            to get a update file from the cache.
+            a update archive in work dir. Otherwise if set to False, it will
+            try to get a update archive from the cache.
 
         Returns
         -------
@@ -199,40 +200,40 @@ class Daemon():
         """
 
         ret = Result.SUCCESS
-        update_file = ""
+        update_archive = ""
 
-        if resume:  # find update file in work directory
-            for f in listdir(self._work_dir):
-                if is_update_file(f):
-                    update_file = self._work_dir + f
-                    self._log.info("resuming update with " + f)
+        if resume:  # find update archive in work directory
+            for fname in listdir(self._work_dir):
+                if is_update_archive(fname):
+                    update_archive = self._work_dir + fname
+                    self._log.info("resuming update with " + fname)
                     break
-        elif len(self._cache) != 0:  # get new update file from cache
+        elif len(self._cache) != 0:  # get new update archive from cache
             print(self._cache)
-            update_file = \
+            update_archive = \
                 move(self._cache_dir + self._cache.pop(), self._work_dir)
-            self._log.info("got " + basename(update_file) + " from cache")
+            self._log.info("got " + basename(update_archive) + " from cache")
 
-        if update_file == "":  # nothing to do
+        if update_archive == "":  # nothing to do
             ret = Result.NOTHING
 
-        # if there is a update file to use, open it
+        # if there is a update archive to use, open it
         if ret == Result.SUCCESS:
-            self._update_file = basename(update_file)
-            self._log.info("starting update with " + self._update_file)
+            self._update_archive = basename(update_archive)
+            self._log.info("starting update with " + self._update_archive)
             try:
-                inst_list = extract_update_file(update_file, self._work_dir)
-                self._log.debug(self._update_file + " successfully opened")
+                inst_list = extract_update_archive(update_archive, self._work_dir)
+                self._log.debug(self._update_archive + " successfully opened")
             except (UpdateError, InstructionError, FileNotFoundError) as exc:
                 self._log.critical(exc)
                 ret = Result.FAILED_NON_CRIT
 
-        # if update file opened successfully, run the update
+        # if update archive opened successfully, run the update
         if ret == Result.SUCCESS:
             try:
                 for inst in inst_list:
                     inst.run(self._log)
-                self._log.debug(self._update_file + " successfully ran")
+                self._log.debug(self._update_archive + " successfully ran")
             except (UpdateError, InstructionError, FileNotFoundError) as exc:
                 self._log.critical(exc)
                 ret = Result.FAILED_CRIT
@@ -251,35 +252,10 @@ class Daemon():
             self._cache = []
 
         self._clear_work_dir()
-        self._update_file = ""
-        self._log.info("update {} result {}".format(self._update_file, ret))
+        self._update_archive = ""
+        self._log.info("update {} result {}".format(self._update_archive, ret))
         self._status = State.STANDBY
         return ret
-
-    def _make_status_file(self) -> str:
-        """Make status tar file with a copy of the dpkg status file and a file
-        with the list of updates in cache.
-
-        Returns
-        -------
-        str
-            Path to new status file or empty string on failure.
-        """
-
-        dpkg_file = OLMFile(keyword="dpkg-status").name
-        olu_file = self._work_dir + OLMFile(keyword="olu-status").name
-        olu_tar = "/tmp/" + OLMFile(keyword="olu-status", ext=".tar.xz").name
-
-        with open(olu_file, "w") as fptr:
-            fptr.write(json.dumps(listdir(self._cache_dir)))
-
-        with tarfile.open(olu_tar, "w:xz") as tfptr:
-            tfptr.add("/var/lib/dpkg/status", arcname=basename(dpkg_file))
-            tfptr.add(olu_file, arcname=basename(olu_file))
-
-        self._clear_work_dir()
-        self._status = State.STANDBY
-        return olu_tar
 
     def _clear_work_dir(self):
         """Clears the working directory."""
@@ -305,15 +281,15 @@ class Daemon():
         return self._status.value
 
     @property
-    def AvailableUpdateFiles(self) -> int:
-        """uint32: D-Bus property for the number of update files in cache.
+    def AvailableUpdateArchives(self) -> int:
+        """uint32: D-Bus property for the number of update archives in cache.
         Readonly.
         """
         return len(self._cache)
 
     @property
-    def UpdateFile(self) -> str:
-        """str: D-Bus property for the current update file. Will be a empty
+    def UpdateArchive(self) -> str:
+        """str: D-Bus property for the current update archive. Will be a empty
         str if the daemon is not currently updating. Readonly.
         """
         return self._update
@@ -321,13 +297,13 @@ class Daemon():
     # -------------------------------------------------------------------------
     # dbus methods
 
-    def AddUpdateFile(self, update_file: str) -> bool:
-        """D-Bus method that copies an update file into the update file cache.
+    def AddUpdateArchive(self, update_archive: str) -> bool:
+        """D-Bus method that copies an update archive into the update archive cache.
 
         Parameters
         ----------
-        update_file: str
-            The absolute path to update file for the updater to store.
+        update_archive: str
+            The absolute path to update archive for the updater to store.
 
         Returns
         -------
@@ -336,11 +312,11 @@ class Daemon():
         """
 
         ret = True
-        filename = basename(update_file)
+        filename = basename(update_archive)
 
         try:
-            OLMFile(load=update_file)
-            copyfile(update_file, self._cache_dir + filename)
+            OLMFile(load=update_archive)
+            copyfile(update_archive, self._cache_dir + filename)
             self._cache.append(filename)
             self._cache.sort(reverse=True)
             self._log.info(filename + " was added to cache")
@@ -351,7 +327,7 @@ class Daemon():
         return ret
 
     def Update(self) -> bool:
-        """D-Bus method to load the oldest update file in cache and runs update.
+        """D-Bus method to load the oldest update archive in cache and runs update.
 
         Returns
         -------
@@ -369,11 +345,11 @@ class Daemon():
         self._lock.release()
         return ret
 
-    def MakeStatusFile(self) -> bool:
+    def MakeStatusArchive(self) -> bool:
         """D-Bus method to make status tar file with a copy of the dpkg status
-        file and a file with the list of update files in cache. Will
-        asynchronously reply with the StatusFile dbus signal with the path to
-        the file once the file is made.
+        file and a file with the list of update archives in cache. Will
+        asynchronously reply with the StatusArchive dbus signal with the path
+        to the file once the file is made.
 
         Returns
         -------
