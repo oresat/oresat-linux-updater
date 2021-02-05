@@ -11,10 +11,10 @@ from pathlib import Path
 from enum import IntEnum, auto
 from threading import Thread, Lock
 from pydbus.generic import signal
-from oresat_linux_updater.olm_file import OLMFile
-from oresat_linux_updater.status_archive import make_status_archive
-from oresat_linux_updater.update import extract_update_file, is_update_file, \
-        UpdateError, InstructionError
+from olm_file import OLMFile
+from status_archive import make_status_archive
+from update import extract_update_file, is_update_file, UpdateError, \
+        InstructionError
 
 
 DBUS_INTERFACE_NAME = "org.oresat.updater"

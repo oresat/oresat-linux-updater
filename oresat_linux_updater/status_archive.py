@@ -4,7 +4,7 @@ import json
 from os import listdir, remove
 from os.path import basename, isfile, isdir
 import tarfile
-from oresat_linux_updater.olm_file import OLMFile
+from olm_file import OLMFile
 
 OLU_STATUS_KEYWORD = "olu-status"
 DPKG_STATUS_KEYWORD = "dpkg-status"

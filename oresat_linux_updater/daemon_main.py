@@ -5,12 +5,16 @@ Handles all arguement parsing, forking, log handling.
 
 import sys
 import os
-import getopt
 import logging
+from argparse import ArgumentParser
 from logging.handlers import SysLogHandler
 from pydbus import SystemBus
 from gi.repository import GLib
-from oresat_linux_updater.daemon import Daemon, DBUS_INTERFACE_NAME
+from daemon import Daemon, DBUS_INTERFACE_NAME
+
+
+CACHE_DIR = "/var/cache/oresat_linux_manager/"
+WORK_DIR = "/var/lib/oresat_linux_manager/"
 
 
 def _daemonize(pid_file: str):
@@ -79,28 +83,31 @@ def usage():
 
 def main():
     """The main for the oresat linux updater daemon"""
+
+    ret = 0
     pid_file = "/run/oresat-linux-updaterd.pid"
-    daemon_flag = False
-    verbose = False
 
-    opts, _ = getopt.getopt(sys.argv[1:], "dvh")
-    for opt, _ in opts:
-        if opt == "-d":
-            daemon_flag = True
-        if opt == "-v":
-            verbose = True
-        elif opt == "-h":
-            usage()
-            sys.exit(0)
+    parser = ArgumentParser()
+    parser.add_argument("-d", "--daemon", action="store_true",
+                        help="daemonize the process")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="enable debug log messaging")
+    parser.add_argument("-w", "--work-dir", dest="work_dir",
+                        default=WORK_DIR,
+                        help="override the working directory")
+    parser.add_argument("-c", "--cache-dir", dest="cache_dir",
+                        default=CACHE_DIR,
+                        help="override the update archive cache directory")
+    args = parser.parse_args()
 
-    if daemon_flag:
+    if args.daemon:
         _daemonize(pid_file)
         log_handler = SysLogHandler(address="/dev/log")
     else:
         log_handler = logging.StreamHandler(sys.stderr)
 
     # turn on logging for debug messages
-    if verbose:
+    if args.verbose:
         level = logging.DEBUG
     else:
         level = logging.INFO
@@ -110,9 +117,7 @@ def main():
     log = logging.getLogger('oresat-linux-updater')
 
     # make updater
-    work_dir = "/tmp/oresat_linux_updater/"
-    cache = "/var/cache/oresat_linux_manager/"
-    updater_daemon = Daemon(work_dir, cache, log)
+    updater_daemon = Daemon(args.work_dir, args.cache, log)
 
     # set up dbus wrapper
     bus = SystemBus()
@@ -129,8 +134,13 @@ def main():
         log.critical(exc)
         updater_daemon.quit()
         loop.quit()
+        ret = 1
 
-    if daemon_flag:
+    if args.daemon:
         os.remove(pid_file)  # clean up daemon
 
-    return 0
+    return ret
+
+
+if __name__ == "__main__":
+    main()

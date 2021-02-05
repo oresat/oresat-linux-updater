@@ -6,9 +6,9 @@ import json
 import tarfile
 from os import remove
 from os.path import abspath, basename, isfile
-from oresat_linux_updater.instruction import Instruction, InstructionError, \
-        InstructionType, INSTRUCTIONS_WITH_FILES
-from oresat_linux_updater.olm_file import OLMFile
+from instruction import Instruction, InstructionError, InstructionType, \
+        INSTRUCTIONS_WITH_FILES
+from olm_file import OLMFile
 
 INST_FILE = "instructions.txt"
 """The instructions file that is always in a OreSat Linux update. It defines
