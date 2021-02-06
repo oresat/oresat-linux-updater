@@ -40,4 +40,4 @@ jobs:
     - name: Run unit tests
       run: |
         # run as module, so it run with python version above (otherwise it uses 3.6)
-        sudo python3.7 -m pytest tests/
+        sudo python -m pytest tests/
