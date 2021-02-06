@@ -19,16 +19,13 @@ jobs:
   build:
 
     runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        python-version: [3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python 3.7
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: 3.7
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -43,4 +40,4 @@ jobs:
     - name: Run unit tests
       run: |
         # run as module, so it run with python version above (otherwise it uses 3.6)
-        sudo python3 -m pytest tests/
+        sudo python3.7 -m pytest tests/
