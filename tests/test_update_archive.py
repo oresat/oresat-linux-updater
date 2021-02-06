@@ -43,8 +43,8 @@ def test_write_instructions_file():
                 Instruction(InstructionType.BASH_SCRIPT, [TEST_BASH_SCRIPT])
             ]
 
-    write_instructions_file(inst_list1, TEST_WORK_DIR)
     clear_test_work_dir()
+    write_instructions_file(inst_list1, TEST_WORK_DIR)
 
 
 def test_extract_update_archive():
