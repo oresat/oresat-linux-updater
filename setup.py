@@ -23,9 +23,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'olu-daemon = oresat_linux_updater.daemon_main:main'
-            'olu-daemon-client = oresat_linux_updater.daemon_client:main'
-            'olu-update-maker = oresat_linux_updater.update_maker:main'
+            'oresat-linux-updater = oresat_linux_updater.main:main',
+            'oresat-linux-updater-client = oresat_linux_updater.client:main'
             ],
     },
     classifiers=[

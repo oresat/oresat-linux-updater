@@ -1,6 +1,6 @@
-"""Main for the oresat linux updater daemon.
+"""Main for the OreSat Linux updater daemon.
 
-Handles all arguement parsing, forking, log handling.
+Handles all arguement parsing, daemonizing, and log configuration.
 """
 
 import sys
@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 from logging.handlers import SysLogHandler
 from pydbus import SystemBus
 from gi.repository import GLib
-from oresat_linux_updater.updater import Updater, DBUS_INTERFACE_NAME
+from oresat_linux_updater.dbus_server import DBusServer, DBUS_INTERFACE_NAME
 
 
 CACHE_DIR = "/var/cache/oresat_linux_manager/"
@@ -67,20 +67,6 @@ def _daemonize(pid_file: str):
         fptr.write(pid + '\n')
 
 
-def usage():
-    """Print the arguement usage message"""
-    message = """
-        usage:\n
-        python3 -m oresat_linux_updater
-
-        flags
-        -d : to run as a process.
-        -v : to on verbose logging.
-        -h : this message.
-        """
-    print(message)
-
-
 def main():
     """The main for the oresat linux updater daemon"""
 
@@ -117,7 +103,7 @@ def main():
     log = logging.getLogger('oresat-linux-updater')
 
     # make updater
-    updater = Updater(args.work_dir, args.cache, log)
+    updater = DBusServer(args.work_dir, args.cache_dir, log)
 
     # set up dbus wrapper
     bus = SystemBus()
@@ -125,12 +111,12 @@ def main():
     loop = GLib.MainLoop()
 
     try:
-        updater.start()
+        updater.run()
         loop.run()
     except KeyboardInterrupt:
         updater.quit()
         loop.quit()
-    except Exception as exc:
+    except Exception as exc:  # this should not happen
         log.critical(exc)
         updater.quit()
         loop.quit()

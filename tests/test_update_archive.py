@@ -2,7 +2,7 @@
 
 import pytest
 from oresat_linux_updater.instruction import Instruction, InstructionType
-from oresat_linux_updater.update_archive import UpdateError, \
+from oresat_linux_updater.update_archive import UpdateArchiveError, \
         read_instructions_file, extract_update_archive, \
         write_instructions_file, create_update_archive
 from .common import TEST_WORK_DIR, TEST_INST_FILE1, TEST_INST_FILE2, \
@@ -22,16 +22,16 @@ def test_read_instructions_file():
 
     # invalid instructions files
 
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         read_instructions_file(TEST_INST_FILE2, TEST_WORK_DIR)
 
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         read_instructions_file(TEST_INST_FILE3, TEST_WORK_DIR)
 
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         read_instructions_file(TEST_INST_FILE4, TEST_WORK_DIR)
 
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         read_instructions_file(TEST_INST_FILE5, TEST_WORK_DIR)
 
 
@@ -68,31 +68,31 @@ def test_extract_update_archive():
         extract_update_archive(TEST_UPDATE3, TEST_WORK_DIR)
 
     clear_test_work_dir()
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         extract_update_archive(TEST_UPDATE4, TEST_WORK_DIR)
 
     clear_test_work_dir()
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         extract_update_archive(TEST_UPDATE5, TEST_WORK_DIR)
 
     clear_test_work_dir()
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         extract_update_archive(TEST_UPDATE6, TEST_WORK_DIR)
 
     clear_test_work_dir()
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         extract_update_archive(TEST_UPDATE7, TEST_WORK_DIR)
 
     clear_test_work_dir()
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         extract_update_archive(TEST_UPDATE8, TEST_WORK_DIR)
 
     clear_test_work_dir()
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         extract_update_archive(TEST_UPDATE9, TEST_WORK_DIR)
 
     clear_test_work_dir()
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         extract_update_archive("invalid-file", TEST_WORK_DIR)
 
 
@@ -111,5 +111,5 @@ def test_create_update_archive():
 
     create_update_archive("test", inst_list1, TEST_WORK_DIR, False)
 
-    with pytest.raises(UpdateError):
+    with pytest.raises(UpdateArchiveError):
         create_update_archive("test", inst_list2, TEST_WORK_DIR)

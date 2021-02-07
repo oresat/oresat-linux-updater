@@ -1,43 +1,28 @@
 """Linux updater daemon"""
 
-import json
-import logging
-import tarfile
-from time import sleep
+from logging import Logger
 from os import listdir
 from os.path import abspath, basename
 from shutil import copyfile, move, rmtree
 from pathlib import Path
 from enum import IntEnum, auto
-from threading import Thread, Lock
-from pydbus.generic import signal
+from threading import Lock
 from oresat_linux_updater.olm_file import OLMFile
-from oresat_linux_updater.status_archive import make_status_archive
 from oresat_linux_updater.update_archive import extract_update_archive, \
-        is_update_archive, UpdateError, InstructionError
+        is_update_archive, UpdateArchiveError, InstructionError
 
 
-DBUS_INTERFACE_NAME = "org.oresat.updater"
-
-
-class State(IntEnum):
-    """The states oresat linux updaer daemon can be in."""
-
-    STANDBY = 0
-    """Waiting for commands."""
-
-    UPDATE = auto()
-    """Updating."""
-
-    STATUS_FILE = auto()
-    """Making the status tar file."""
+class UpdaterError(Exception):
+    """An error occurred in Updater class."""
 
 
 class Result(IntEnum):
-    """The integer value UpdateResult will return"""
+    """The integer value Updater's update() will return"""
 
     NOTHING = 0
-    """Nothing for the updater to do. The cache was empty."""
+    """Nothing for the updater to do. The cache was empty or there was nothing
+    to resume.
+    """
 
     SUCCESS = auto()
     """The update successfully install."""
@@ -55,68 +40,27 @@ class Result(IntEnum):
 
 
 class Updater():
-    """The oresat linux updater. All D-Bus methods, properties, and signals
-    follow Pascal case naming.
+    """The OreSat Linux updater. Allows OreSat Linux boards to be update thru
+    update archives.
+
+    While this could be replaced with a couple of functions. Having a object
+    with properties, allow for easy to get status info while updating. All
+    properties are readonly.
+
+    All functions and properties are thread safe.
+
     """
 
-    dbus = """
-    <node>
-        <interface name="org.oresat.updater">
-            <method name='AddUpdateArchive'>
-                <arg type='s' name='update_archive' direction='in'/>
-                <arg type='b' name='output' direction='out'/>
-            </method>
-            <method name='Update'>
-                <arg type='b' name='output' direction='out'/>
-            </method>
-            <method name='MakeStatusArchive'>
-                <arg type='b' name='output' direction='out'/>
-            </method>
-            <property name="StatusName" type="s" access="read" />
-            <property name="StatusValue" type="y" access="read" />
-            <property name="UpdateArchive" type="s" access="read" />
-            <property name="AvailableUpdateArchives" type="u" access="read" />
-            <signal name="StatusArchive">
-                <arg type='s'/>
-            </signal>
-            <signal name="UpdateResult">
-                <arg type='y'/>
-            </signal>
-        </interface>
-    </node>
-    """  # doesn't work in __init__()
-
-    # dbus signals
-    StatusArchive = signal()
-    UpdateResult = signal()
-
-    # -------------------------------------------------------------------------
-    # non-dbus methods
-
-    def __init__(self,
-                 work_dir: str,
-                 cache_dir: str,
-                 logger: logging.Logger
-                 ):
+    def __init__(self, work_dir: str, cache_dir: str, logger: Logger):
         """
         Parameters
         ----------
         work_dir: str
-            Archivepath to working directory.
+            Directory to use a the working dir. Should be a abslute path.
         cache_dir: str
-            Archivepath to update archive cache directory.
+            Directory to store update archives in. Should be a abslute path.
         logger: logging.Logger
             The logger object to use.
-
-        Attributes
-        ----------
-        StatusArchive: str
-            D-Bus signal with a str that will sent the absolute path to the
-            updater status file after the MakeStatusArchive dbus method is
-            called.
-        UpdateResult: uint8
-            D-Bus signal with a :class:`Result` value that will be sent after
-            an update has finished or failed.
         """
 
         self._log = logger
@@ -125,185 +69,37 @@ class Updater():
         Path(cache_dir).mkdir(parents=True, exist_ok=True)
         self._cache_dir = abspath(cache_dir) + "/"
         self._log.debug("cache dir " + self._cache_dir)
-        self._cache = listdir(self._cache_dir)
-        self._cache.sort(reverse=True)
 
         # make update_archives for work dir
         Path(work_dir).mkdir(parents=True, exist_ok=True)
         self._work_dir = abspath(work_dir) + "/"
         self._log.debug("work dir " + self._work_dir)
 
-        self._status = State.STANDBY
-        self._update_archive = ""
+        # mutex and things protected by lock
         self._lock = Lock()
-
-        # set up working thread
-        self._running = False
-        self._working_thread = Thread(target=self._working_loop)
-
-    def __del__(self):
-        self.quit()
-
-    def start(self):
-        """Start the working thread."""
-        self._log.debug("starting working thread")
-        self._running = True
-        self._working_thread.start()
-
-    def quit(self):
-        """Stop the working thread."""
-        self._log.debug("stopping working thread")
-        self._running = False
-        if self._working_thread.is_alive():
-            self._working_thread.join()
-
-    def _working_loop(self):
-        """The main loop to contol the Linux Updater asynchronously. Will be in
-        its own thread.
-        """
-
-        if len(listdir(self._work_dir)) != 0:
-            self._log.info("Files found in work dir, tring to resume update")
-            ret = self._update(True)  # need to resume
-            self.UpdateResult(ret)
-
-        self._log.debug("starting working loop")
-
-        while self._running:
-            if self._status == State.UPDATE:
-                ret = self._update()
-                self.UpdateResult(ret)
-            elif self._status == State.STATUS_FILE:
-                ret = make_status_archive(self._cache_dir, True)
-                self.StatusArchive(ret)
-            else:
-                sleep(0.1)  # nothing for this thread to do
-
-        self._log.debug("stoping working loop")
-
-    def _update(self, resume=False) -> int:
-        """Run a update. If the update fails, the cache will be cleared, as it
-        is asume all newwer updates require the failed updated to be run
-        successfully first.
-
-        Parameters
-        ----------
-        resume: bool
-            A flag for resuming update. If set to True, the it will try to find
-            a update archive in work dir. Otherwise if set to False, it will
-            try to get a update archive from the cache.
-
-        Returns
-        -------
-        int
-            A Result value.
-        """
-
-        ret = Result.SUCCESS
-        update_archive = ""
-
-        if resume:  # find update archive in work directory
-            for fname in listdir(self._work_dir):
-                if is_update_archive(fname):
-                    update_archive = self._work_dir + fname
-                    self._log.info("resuming update with " + fname)
-                    break
-        elif len(self._cache) != 0:  # get new update archive from cache
-            print(self._cache)
-            update_archive = \
-                move(self._cache_dir + self._cache.pop(), self._work_dir)
-            self._log.info("got " + basename(update_archive) + " from cache")
-
-        if update_archive == "":  # nothing to do
-            ret = Result.NOTHING
-
-        # if there is a update archive to use, open it
-        if ret == Result.SUCCESS:
-            self._update_archive = basename(update_archive)
-            self._log.info("starting update with " + self._update_archive)
-            try:
-                inst_list = extract_update_archive(update_archive, self._work_dir)
-                self._log.debug(self._update_archive + " successfully opened")
-            except (UpdateError, InstructionError, FileNotFoundError) as exc:
-                self._log.critical(exc)
-                ret = Result.FAILED_NON_CRIT
-
-        # if update archive opened successfully, run the update
-        if ret == Result.SUCCESS:
-            try:
-                for inst in inst_list:
-                    inst.run(self._log)
-                self._log.debug(self._update_archive + " successfully ran")
-            except (UpdateError, InstructionError, FileNotFoundError) as exc:
-                self._log.critical(exc)
-                ret = Result.FAILED_CRIT
-
-        if ret in [Result.FAILED_NON_CRIT, Result.FAILED_CRIT]:
-            # update failed
-            self._log.info("clearing file cache due to failed update")
-
-            files = ""
-            for i in self._cache:
-                files += basename(i) + " "
-            self._log.info("deleted " + files)
-
-            rmtree(self._cache_dir, ignore_errors=True)
-            Path(self._cache_dir).mkdir(parents=True, exist_ok=True)
-            self._cache = []
-
-        self._clear_work_dir()
+        self._is_updating = False
         self._update_archive = ""
-        self._log.info("update {} result {}".format(self._update_archive, ret))
-        self._status = State.STANDBY
-        return ret
+        self._total_instructions = 0
+        self._current_instruction_index = 0
+        self._current_command = ""
+        self._cache = listdir(self._cache_dir)
 
-    def _clear_work_dir(self):
+    def clear_cache_dir(self):
         """Clears the working directory."""
+
+        self._log.info("clearing update archive cache directory")
         if len(listdir(self._work_dir)) != 0:
             rmtree(self._work_dir, ignore_errors=True)
             Path(self._work_dir).mkdir(parents=True, exist_ok=True)
+            self._cache = listdir(self._cache_dir)
 
-    # -------------------------------------------------------------------------
-    # dbus properties
-
-    @property
-    def StatusName(self) -> str:
-        """str: D-Bus property for the curent status as a :class:`State`
-        name. Readonly.
-        """
-        return self._status.value
-
-    @property
-    def StatusValue(self) -> int:
-        """uint8: D-Bus property for the curent status as a :class:`State`
-        value. Readonly.
-        """
-        return self._status.value
-
-    @property
-    def AvailableUpdateArchives(self) -> int:
-        """uint32: D-Bus property for the number of update archives in cache.
-        Readonly.
-        """
-        return len(self._cache)
-
-    @property
-    def UpdateArchive(self) -> str:
-        """str: D-Bus property for the current update archive. Will be a empty
-        str if the daemon is not currently updating. Readonly.
-        """
-        return self._update
-
-    # -------------------------------------------------------------------------
-    # dbus methods
-
-    def AddUpdateArchive(self, update_archive: str) -> bool:
-        """D-Bus method that copies an update archive into the update archive cache.
+    def add_update_archive(self, update_archive: str) -> bool:
+        """Copies update archive into the update archive cache.
 
         Parameters
         ----------
         update_archive: str
-            The absolute path to update archive for the updater to store.
+            The absolute path to update archive for the updater to copy.
 
         Returns
         -------
@@ -326,43 +122,169 @@ class Updater():
 
         return ret
 
-    def Update(self) -> bool:
-        """D-Bus method to load the oldest update archive in cache and runs update.
+    def update(self) -> int:
+        """Run a update.
+
+        If there are file aleady in the working directory, it will try to find
+        and resume the update, otherwise it will get the oldest archive from
+        the update archive cache and run it.
+
+        If the update fails, the cache will be cleared, as it is asume all
+        newer updates require the failed updated to be run successfully first.
+
+        Raises
+        ------
+        UpdaterError
+            If called when already updating.
 
         Returns
         -------
-        bool
-            True if a the updater will start to update or False on failure.
+        int
+            A :class:`Result` value.
         """
 
-        ret = False
+        ret = Result.SUCCESS
         self._lock.acquire()
 
-        if self._status == State.STANDBY:
-            self._status = State.UPDATE
-            ret = True
+        if self._is_updating:
+            self._lock.release()
+            raise UpdaterError("can't start an new update while updating")
 
+        self._update_archive = ""
+        self._is_updating = True
         self._lock.release()
-        return ret
 
-    def MakeStatusArchive(self) -> bool:
-        """D-Bus method to make status tar file with a copy of the dpkg status
-        file and a file with the list of update archives in cache. Will
-        asynchronously reply with the StatusArchive dbus signal with the path
-        to the file once the file is made.
+        # something in working dir, see if it an update to resume
+        file_list = listdir(self._work_dir)
+        if len(file_list) != 0:
+            self._log.info("files found in working dir")
 
-        Returns
-        -------
-        bool
-            True if a the updater will make the status tar or False on failure.
+            # find update archive in work directory
+            for fname in file_list:
+                if is_update_archive(fname):
+                    self._update_archive = self._work_dir + fname
+                    self._log.info("resuming update with " + fname)
+                    break
+
+            if self._update_archive == "":  # Nothing to resume
+                self._log.info("nothing to resume")
+                self._log.info("clearing working directory")
+                rmtree(self._work_dir, ignore_errors=True)
+                Path(self._work_dir).mkdir(parents=True, exist_ok=True)
+
+        # if not resuming, get new update archive from cache
+        if self._update_archive == "" and len(self._cache) != 0:
+            self._update_archive = \
+                move(self._cache_dir + self._cache.pop(), self._work_dir)
+            msg = "got {} from cache".format(basename(self._update_archive))
+            self._log.info(msg)
+
+        if self._update_archive == "":  # nothing to do
+            ret = Result.NOTHING
+
+        # if there is a update archive to use, open it
+        if ret == Result.SUCCESS:
+            self._update_archive = basename(self._update_archive)
+            self._log.info("opening " + self._update_archive)
+            try:
+                inst_list = extract_update_archive(
+                        self._work_dir + self._update_archive,
+                        self._work_dir)
+                self._log.debug(self._update_archive + " successfully opened")
+            except (UpdateArchiveError, InstructionError, FileNotFoundError) \
+                    as exc:
+                self._log.critical(exc)
+                ret = Result.FAILED_NON_CRIT
+
+        # if update archive opened successfully, run the update
+        if ret == Result.SUCCESS:
+            self._log.info("running update")
+            """
+            No turn back point, the update is starting!!!
+            If anything fails/errors the board's software could break.
+            All errors are log at critical level.
+            """
+            try:
+                self._total_instructions = len(inst_list)
+                for i in range(self._total_instructions):
+                    self._current_instruction_index = i
+                    self._current_command = inst_list[i].bash_command
+                    inst_list[i].run(self._log)
+                self._log.debug(self._update_archive + " successfully ran")
+            except (UpdateArchiveError, InstructionError, FileNotFoundError) \
+                    as exc:
+                self._log.critical(exc)
+                ret = Result.FAILED_CRIT
+
+        # if update failed
+        if ret in [Result.FAILED_NON_CRIT, Result.FAILED_CRIT]:
+            self._log.info("clearing file cache due to failed update")
+
+            files = ""
+            for i in self._cache:
+                files += basename(i) + " "
+            self._log.info("deleted " + files)
+
+            rmtree(self._cache_dir, ignore_errors=True)
+            Path(self._cache_dir).mkdir(parents=True, exist_ok=True)
+            self._lock.acquire()
+            self._cache = []
+            self._lock.release()
+
+        self._log.info("update {} result {}".format(self._update_archive, ret))
+        self._log.debug("clearing working directory")
+        rmtree(self._work_dir, ignore_errors=True)
+        Path(self._work_dir).mkdir(parents=True, exist_ok=True)
+        self._total_instructions = 0
+        self._current_instruction_index = 0
+        self._current_command = ""
+
+        self._lock.acquire()
+        self._update_archive = ""
+        self._is_updating = False
+        self._lock.release()
+        return ret.value
+
+    @property
+    def available_update_archives(self) -> int:
+        """int: The number of update archives in cache. Readonly."""
+
+        return len(self._cache)
+
+    @property
+    def is_updating(self) -> bool:
+        """bool: Flag if the updater is updating or not."""
+
+        return self._is_updating
+
+    @property
+    def update_archive(self) -> str:
+        """str: Current update archive while updating. Will be a empty
+        str if the daemon is not currently updating. Readonly.
         """
 
-        ret = False
-        self._lock.acquire()
+        return self._update_archive
 
-        if self._status == State.STANDBY:
-            self._status = State.STATUS_FILE
-            ret = True
+    @property
+    def total_instructions(self) -> int:
+        """int: The total number of instructions in the update running. Will be
+        0 if the not currently updating. Readonly.
+        """
 
-        self._lock.release()
-        return ret
+        return self._total_instructions
+
+    @property
+    def instruction_index(self) -> int:
+        """int: The index of the instruction currently running. Will be 0 if
+        the not currently updating. Readonly.
+        """
+
+        return self._current_instruction_index
+
+    @property
+    def instruction_command(self) -> str:
+        """str: The current bash command being running. Will be an empty
+        str if the not currently updating. Readonly.
+        """
+
+        return self._current_command

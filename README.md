@@ -12,7 +12,7 @@ or bash scripts are ran.
 
 ## Dependacies
 
-- `$ sudo apt install python3 python3-pydbus python3-apt libsystemd-dev`
+- `$ sudo apt install python3 python3-pydbus libsystemd-dev`
 
 ## Building OreSast Debian package
 
@@ -23,15 +23,11 @@ or bash scripts are ran.
 
 - If install as a Debian package: `$ sudo systemctl start oresat-updaterd`
 - From repo: `$ sudo python3 -m oresat_linux_updater`
-- flags:
-  - `-h` For help output
-  - `-d` To run as a daemon
-  - `-v` Turn on verbose logging
 
 ## Unit Tests
 
-- Requires `python3-pytest`
-- `$ pytest tests/` or `$ pytest-3 tests/`
+- Requires `pytest`
+- `$ pytest-3 tests/`
 
 ## Docs
 

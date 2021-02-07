@@ -1,6 +1,5 @@
 """tests for the Updater class"""
 
-import time
 import pytest
 from oresat_linux_updater.updater import Updater, Result
 from .common import TEST_WORK_DIR, TEST_CACHE_DIR, LOGGER, TEST_UPDATE0, \
@@ -16,32 +15,32 @@ def updater():
     return Updater(TEST_WORK_DIR, TEST_CACHE_DIR, LOGGER)
 
 
-def test_loop(updater):
-
-    updater.start()
-    time.sleep(0.05)
-    updater.quit()
+def test_default_update_properties(updater):
+    # test all property are back to default
+    assert updater.is_updating is False
+    assert updater.update_archive == ""
+    assert updater.total_instructions == 0
+    assert updater.instruction_index == 0
+    assert updater.instruction_command == ""
 
 
 def test_add_update(updater):
 
-    assert updater.AvailableUpdateArchives == 0
+    assert updater.available_update_archives == 0
 
-    assert updater.AddUpdateArchive(TEST_UPDATE1)
+    assert updater.add_update_archive(TEST_UPDATE1)
+    assert updater.available_update_archives == 1
 
-    assert updater.AvailableUpdateArchives == 1
+    assert updater.add_update_archive(TEST_UPDATE2)
+    assert updater.available_update_archives == 2
 
-    assert updater.AddUpdateArchive(TEST_UPDATE2)
+    assert not updater.add_update_archive(TEST_UPDATE9)
+    assert updater.available_update_archives == 2
 
-    assert updater.AvailableUpdateArchives == 2
+    assert not updater.add_update_archive("Invalid_file")
+    assert updater.available_update_archives == 2
 
-    assert not updater.AddUpdateArchive(TEST_UPDATE9)
-
-    assert updater.AvailableUpdateArchives == 2
-
-    assert not updater.AddUpdateArchive("Invalid_file")
-
-    assert updater.AvailableUpdateArchives == 2
+    test_default_update_properties(updater)
 
 
 def test_update(updater):
@@ -50,19 +49,28 @@ def test_update(updater):
     # should fails on the 3rd update due to missing dependencies
     # should run in order 0 -> 1 -> 2
     # when 2 fails cache should be cleared
-    assert updater.AvailableUpdateArchives == 0
-    updater.AddUpdateArchive(TEST_UPDATE0)
-    updater.AddUpdateArchive(TEST_UPDATE1)
-    updater.AddUpdateArchive(TEST_UPDATE2)
-    updater.AddUpdateArchive(TEST_UPDATE3)
-    assert updater.AvailableUpdateArchives == 4
-    assert updater._update() is Result.SUCCESS
-    assert updater.AvailableUpdateArchives == 3
-    assert updater._update() is Result.SUCCESS
-    assert updater.AvailableUpdateArchives == 2
-    assert updater._update() is Result.FAILED_CRIT
-    assert updater.AvailableUpdateArchives == 0
+    assert updater.available_update_archives == 0
+    updater.add_update_archive(TEST_UPDATE0)
+    updater.add_update_archive(TEST_UPDATE1)
+    updater.add_update_archive(TEST_UPDATE2)
+    updater.add_update_archive(TEST_UPDATE3)
+    assert updater.available_update_archives == 4
 
-    updater.AddUpdateArchive(TEST_UPDATE3)
-    assert updater._update() is Result.FAILED_NON_CRIT
-    assert updater.AvailableUpdateArchives == 0
+    assert updater.update() == Result.SUCCESS.value
+    assert updater.available_update_archives == 3
+    test_default_update_properties(updater)
+
+    assert updater.update() == Result.SUCCESS.value
+    assert updater.available_update_archives == 2
+    test_default_update_properties(updater)
+
+    assert updater.update() == Result.FAILED_CRIT.value
+    assert updater.available_update_archives == 0
+    test_default_update_properties(updater)
+
+    # test bad update
+    updater.add_update_archive(TEST_UPDATE3)
+    assert updater.available_update_archives == 1
+    assert updater.update() == Result.FAILED_NON_CRIT.value
+    assert updater.available_update_archives == 0
+    test_default_update_properties(updater)

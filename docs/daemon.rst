@@ -28,7 +28,7 @@ the update next time the daemon is started.
 
 .. image:: images/UpdaterStateMachine.jpg
 
-.. autoclass:: oresat_linux_updater.daemon.State
+.. autoclass:: oresat_linux_updater.dbus_server.State
    :members:
    :member-order: bysource
    :noindex:
@@ -36,7 +36,7 @@ the update next time the daemon is started.
 D-Bus API
 ---------
 
-.. autoclass:: oresat_linux_updater.daemon.Daemon
+.. autoclass:: oresat_linux_updater.dbus_server.DBusServer
    :members:
-   :exclude-members: start, quit
+   :exclude-members: run, quit
    :noindex:

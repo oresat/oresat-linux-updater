@@ -1,5 +1,99 @@
-"""Everything need to make and extract an OreSat Linux update archive and its
-instructions file
+"""
+Update Archive
+==============
+
+An update archive is tar file that will be used by the OreSat Linux Updater
+daemon to update the Linux board the daemon is running on. The update maker
+will be used to generate these files.
+
+Compression
+-----------
+
+Update files are a tar file compressed with xz. xz is used as it offers a great
+compression ratio and the extra compression time doesn't matter, since the
+update archive will be generated on a ground station server.
+
+Tar Name
+---------
+
+The file name will follow filename standards for oresat-linux-manager (OLM)
+with the keyword set to "update". See
+https://oresat-linux.readthedocs.io/en/latest/standards/file-transfer.html
+for more info on OLM file name standards.
+
+**Example, a update to the GPS board**::
+
+   gps_update_1612392143.tar.xz
+
+The date field in the filename will be used to determine the next file to used
+as the oldest file is always run first.
+
+Tar Contents
+-------------
+
+The update archive will **always** include a instructions.txt file. It can also
+include deb files (debian package files), bash script, and/or files to be used
+by bash scripts as needed.
+
+**Example contents of a update archive**::
+
+    instructions.txt
+    package1.deb
+    package2.deb
+    package3.deb
+    bash_script1.sh
+    bash_script2.sh
+    bash_script3.sh
+    bash_script2_external_file
+
+instructions.txt
+----------------
+
+instruction.txt contatins a JSON string with with a list of instruction
+dictionaries with `type` and `items` fields. The instructions will be run in
+order.
+
+.. autoclass:: oresat_linux_updater.instruction.InstructionType
+   :members:
+   :member-order: bysource
+   :noindex:
+
+**Example instructions.txt**::
+
+    [
+        {
+            "type": "DPKG_INSTALL",
+            "items": ["package1.deb"]
+        },
+        {
+            "type": "BASH_SCIPT",
+            "items": ["bash_script1.sh"]
+        },
+        {
+            "type": "BASH_SCIPT",
+            "items": ["bash_script2.sh"]
+        },
+        {
+            "type": "DPKG_INSTALL",
+            "items": ["package2.deb", "package3.deb"]
+        },
+        {
+            "type": "DPKG_REMOVE",
+            "items": ["package4"]
+        },
+        {
+            "type": "BASH_SCIPT",
+            "items": ["bash_script3.sh"]
+        }
+        {
+            "type": "DPKG_PURGE",
+            "items": ["package5", "package6"]
+        },
+        {
+            "type": "SUPPORT_FILE",
+            "items": ["bash_script2_external_file"]
+        }
+    ]
 """
 
 import json
@@ -11,12 +105,12 @@ from oresat_linux_updater.instruction import Instruction, InstructionError, \
 from oresat_linux_updater.olm_file import OLMFile
 
 INST_FILE = "instructions.txt"
-"""The instructions file that is always in a OreSat Linux update. It defines
-the order instructions are ran in.
+"""The instructions file that is always in a OreSat Linux update archive. It
+defines the order instructions are ran in and how it is ran.
 """
 
 
-class UpdateError(Exception):
+class UpdateArchiveError(Exception):
     """An error occurred when creating or extracting a update archive."""
 
 
@@ -74,7 +168,7 @@ def read_instructions_file(inst_file: str, work_dir: str) -> str:
 
     Raises
     ------
-    UpdateError
+    UpdateArchiveError
         Invalid update instruction JSON or
 
     Returns
@@ -91,7 +185,8 @@ def read_instructions_file(inst_file: str, work_dir: str) -> str:
         with open(inst_file, "r") as fptr:
             inst_list_raw = json.load(fptr)
     except json.JSONDecodeError:
-        raise UpdateError("Invalid instructions JSON in {}".format(inst_file))
+        msg = "Invalid instructions JSON in {}".format(inst_file)
+        raise UpdateArchiveError(msg)
 
     # add path to all files
     for inst_raw in inst_list_raw:
@@ -100,7 +195,7 @@ def read_instructions_file(inst_file: str, work_dir: str) -> str:
             i_items = inst_raw["items"]
         except (TypeError, KeyError):
             msg = "Instructions file JSON was formatted incorrectly"
-            raise UpdateError(msg)
+            raise UpdateArchiveError(msg)
 
         if i_type in INSTRUCTIONS_WITH_FILES:
             items = []
@@ -113,7 +208,7 @@ def read_instructions_file(inst_file: str, work_dir: str) -> str:
             inst = Instruction(i_type, items)  # this will valid the type
         except InstructionError:
             msg = "Instructions file JSON was formatted incorrectly"
-            raise UpdateError(msg)
+            raise UpdateArchiveError(msg)
 
         inst_list.append(inst)
 
@@ -160,7 +255,7 @@ def create_update_archive(board: str, inst_list: dict, work_dir: str,
 
     for item in files:
         if not isfile(item):
-            raise UpdateError("missing file {}".format(item))
+            raise UpdateArchiveError("missing file {}".format(item))
 
     # make tar
     with tarfile.open(work_dir + update.name, "w:xz") as tar:
@@ -187,7 +282,7 @@ def extract_update_archive(update_archive: str, work_dir: str) -> str:
 
     Raises
     ------
-    UpdateError
+    UpdateArchiveError
         Invalid update archive.
 
     Returns
@@ -199,25 +294,26 @@ def extract_update_archive(update_archive: str, work_dir: str) -> str:
     work_dir = abspath(work_dir) + "/"
 
     if not is_update_archive(update_archive):
-        raise UpdateError("Update file does not follow OLM filename standards")
+        msg = "Update file does not follow OLM filename standards"
+        raise UpdateArchiveError(msg)
 
     try:
         with tarfile.open(update_archive, "r:xz") as tptr:
             tptr.extractall(work_dir)
     except tarfile.TarError:
-        raise UpdateError("Invalid update archive")
+        raise UpdateArchiveError("Invalid update archive")
 
     try:
         inst_list = read_instructions_file(work_dir + INST_FILE, work_dir)
     except InstructionError as exc:
-        raise UpdateError(str(exc))
+        raise UpdateArchiveError(str(exc))
 
     # check that all file were in tarfile
     for inst in inst_list:
         if inst.type in INSTRUCTIONS_WITH_FILES:
             for item in inst.items:
                 if not isfile(item):
-                    raise UpdateError("Missing file {}".format(item))
+                    raise UpdateArchiveError("Missing file {}".format(item))
 
     return inst_list
 

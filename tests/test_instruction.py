@@ -2,7 +2,7 @@
 
 import pytest
 from oresat_linux_updater.instruction import Instruction, InstructionType, \
-        InstructionError, _bash_command
+        InstructionError, run_bash_command
 from .common import LOGGER, TEST_DEB_PKG1, TEST_DEB_PKG2, TEST_DEB_PKG1_NAME, \
         TEST_DEB_PKG2_NAME, TEST_BASH_SCRIPT
 
@@ -10,10 +10,10 @@ from .common import LOGGER, TEST_DEB_PKG1, TEST_DEB_PKG2, TEST_DEB_PKG1_NAME, \
 def test_bash_command():
     """Test _bash_command"""
 
-    _bash_command("ls", LOGGER)
+    run_bash_command("ls", LOGGER)
 
     with pytest.raises(InstructionError):
-        _bash_command("abcd", LOGGER)
+        run_bash_command("abcd", LOGGER)
 
 
 def test_run_instruction():

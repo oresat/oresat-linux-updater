@@ -1,5 +1,5 @@
 Main
 ====
 
-.. automodule:: oresat_linux_updater.daemon_main
+.. automodule:: oresat_linux_updater.main
    :members:

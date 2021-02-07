@@ -1,11 +1,11 @@
-Updater Status Tar File
-=======================
+Status Archive
+==============
 
-A OLM status is a .tar.xz archive file that contains two files; a olu-status
-txt file and dpkg-status txt file. The oresat_linux_updater daemon will make
-this if the MakeStatusFile dbus method is called. After every update, a OLU
-status file should be made and sent to the ground station, so future update can
-be made. The OLU status tar files will be around 100KiB.
+A status archive is a .tar.xz archive file that contains two files; a 
+olu-status txt file and dpkg-status txt file. The oresat_linux_updater daemon
+will make this if the MakeStatusFile dbus method is called. After every update,
+a OLU status file should be made and sent to the ground station, so future
+update can be made. The OLU status tar files will be around 100KiB.
 
 OLU Status txt File
 -------------------

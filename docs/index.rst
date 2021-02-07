@@ -1,18 +1,54 @@
 Welcome to OreSat Linux Updater's documentation!
 ================================================
 
-The OreSat Linux Updater can be divided into to parts: a common daemon on all
-Linux boards that allows board to updated over D-Bus using update files and 
-ground station shell interface for making update files.
+.. warning::
+    This is still a work in progress.
 
 .. toctree::
     :maxdepth: 2
 
     glossary
+
+OreSat Linux Updater Daemon
+---------------------------
+
+A common daemon on all Linux boards that allows board to updated over D-Bus
+using update files.
+
+.. toctree::
+    :maxdepth: 2
+
     daemon
+
+Update Maker
+------------
+
+A shell interface for making update files.
+
+.. toctree::
+    :maxdepth: 2
+
     update_maker
-    update_archive_file
-    olu_status_file
+
+Files
+-----
+
+File used by or created by the OreSat Linux updater dameon or Update Maker.
+
+.. toctree::
+    :maxdepth: 2
+
+    update_archive
+    status_archive
+
+Internals
+---------
+
+The internals of the OreSat Linux updater daemon and Updater Maker.
+
+.. toctree::
+    :maxdepth: 2
+
     internal/index
 
 Indices and tables
