@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/github/license/oresat/oresat-linux-updater)](./LICENSE)
 ![unit tests](https://github.com/oresat/oresat-linux-updater/workflows/unit%20tests/badge.svg)
 [![Issues](https://img.shields.io/github/issues/oresat/oresat-linux-updater)](https://github.com/oresat/oresat-linux-updater/issues)
+[![Documentation Status](https://readthedocs.org/projects/oresat-linux/badge/?version=latest)](https://oresat-linux.readthedocs.io/en/latest/?badge=latest)
 
 This is a daemon available on on all OreSat Linux board and will allow any the
 board to update/patched through a archive file over a dbus interface.
