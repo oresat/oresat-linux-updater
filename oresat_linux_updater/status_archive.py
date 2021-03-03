@@ -17,7 +17,7 @@ def read_olu_status_file(name: str) -> str:
     Parameters
     ----------
     name: str
-        The contents of the dpkg status file in the status archive.
+        The olu status tar file.
 
     Raises
     ------
@@ -29,11 +29,22 @@ def read_olu_status_file(name: str) -> str:
         The contents of the olu file.
     """
 
+    status_file = ""
     tar = tarfile.open(name, "r")
-    member = tar.getmember(OLMFile(keyword=OLU_STATUS_KEYWORD))
-    fptr = tar.extractfile(member)
-    content = fptr.read()
-    tar.close()
+
+    for i in tar.getmembers():
+        olm_file = OLMFile(load=i.name)
+        if olm_file.keyword == OLU_STATUS_KEYWORD:
+            status_file = olm_file.name
+            fptr = tar.extractfile(status_file)
+            content = fptr.read()
+            content = content.decode("utf-8")
+            tar.close()
+            break
+
+    if status_file == "":
+        tar.close()
+        raise FileNotFoundError("missing olu-status file in {}".format(name))
 
     return content
 
@@ -45,7 +56,7 @@ def read_dpkg_status_file(name: str):
     Parameters
     ----------
     name: str
-        The contents of the dpkg status file in the status archive.
+        The olu status tar file.
 
     Raises
     ------
@@ -57,11 +68,22 @@ def read_dpkg_status_file(name: str):
         The contents of the dpkg file.
     """
 
+    status_file = ""
     tar = tarfile.open(name, "r")
-    member = tar.getmember(OLMFile(keyword=DPKG_STATUS_FILE))
-    fptr = tar.extractfile(member)
-    content = fptr.read()
-    tar.close()
+
+    for i in tar.getmembers():
+        olm_file = OLMFile(load=i.name)
+        if olm_file.keyword == DPKG_STATUS_KEYWORD:
+            status_file = olm_file.name
+            fptr = tar.extractfile(status_file)
+            content = fptr.read()
+            content = content.decode("utf-8")
+            tar.close()
+            break
+
+    if status_file == "":
+        tar.close()
+        raise FileNotFoundError("missing dpkg-status file in {}".format(name))
 
     return content
 

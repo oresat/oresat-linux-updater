@@ -244,7 +244,7 @@ def create_update_archive(board: str, inst_list: dict, work_dir: str,
 
     files = []
     work_dir = abspath(work_dir) + "/"
-    update = OLMFile(board=board, keyword="updated", ext=".tar.xz")
+    update = OLMFile(board=board, keyword="update", ext=".tar.xz")
 
     inst_file = write_instructions_file(inst_list, work_dir)
     files.append(inst_file)

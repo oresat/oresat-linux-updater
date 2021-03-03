@@ -1,14 +1,14 @@
 """Make update files for OreSat Linux Updater daemon."""
 
-import sys
 from os import listdir, remove
 from os.path import isfile
 from pathlib import Path
 from oresat_linux_updater.olm_file import OLMFile
 from oresat_linux_updater.instruction import Instruction, InstructionType
-from oresat_linux_updater.update_archive import create_update_file
+from oresat_linux_updater.update_archive import create_update_archive
 from oresat_linux_updater.status_archive import read_dpkg_status_file
 from apt.cache import Cache
+
 
 OLU_DIR = str(Path.home()) + "/.oresat_linux_updater/"
 ROOT_DIR = OLU_DIR + "root/"
@@ -32,10 +32,12 @@ class UpdateMaker():
         self._status_file = ""
         self._board = board
         self._cache = Cache(rootdir=ROOT_DIR)
-        self._cache.update(raise_on_error=False)
-        self._cache.open()
         self._deb_pkgs = []
         self._inst_list = []
+
+        print("updating cache")
+        self._cache.update(raise_on_error=False)
+        self._cache.open()
 
         # make sure all dir exist
         Path(OLU_DIR).mkdir(parents=True, exist_ok=True)
@@ -56,7 +58,7 @@ class UpdateMaker():
 
         # find latest olu status tar file
         for i in status_files:
-            if i.name == board:
+            if i.board == board:
                 self._status_file = STATUS_CACHE_DIR + i.name
                 break
 
@@ -66,7 +68,7 @@ class UpdateMaker():
 
         # update status file
         dpkg_data = read_dpkg_status_file(self._status_file)
-        with open(DPKG_STATUS_FILE) as fptr:
+        with open(DPKG_STATUS_FILE, "w") as fptr:
             fptr.write(dpkg_data)
 
         # TODO deal with update files that are not installed yet.
@@ -188,67 +190,11 @@ class UpdateMaker():
                         found = True
                         break
 
-                if found is True:
+                if found is False:
                     break
 
         print("Making tar")
 
-        update_file = create_update_file(self._board, self._inst_list, "./")
+        update_file = create_update_archive(self._board, self._inst_list, "./")
 
         print("{} was made".format(update_file))
-
-
-def usage():
-    """Print usage"""
-    print("""
-    python3 make_update_pacakge.py <board>
-
-    cli commands:
-        add-pkg:    add deb package(s)
-        remove-pkg: remove deb package(s)
-        add-bash:   add bash script(s)
-        add-files:  add support file(s)
-        status:     print status
-        make:       make the update archive file and quit
-        quit:       quit the cli
-    """)
-
-
-def main():
-    if len(sys.argv) < 2:
-        usage()
-        sys.exit(1)
-
-    maker = UpdateMaker(sys.argv[1])
-
-    while True:
-        command = input("-> ").split(" ")
-
-        try:
-            if command[0] == "status":
-                maker.status()
-            elif command[0] == "help":
-                usage()
-            elif command[0] == "add-pkg":
-                maker.add_packages(command[1:])
-            elif command[0] == "remove-pkg":
-                maker.remove_packages(command[1:])
-            elif command[0] == "purge-pkg":
-                maker.purge_packages(command[1:])
-            elif command[0] == "add-bash":
-                maker.add_bash_scripts(command[1:])
-            elif command[0] == "add-files":
-                maker.add_support_files(command[1:])
-            elif command[0] == "make":
-                maker.make_update_archive()
-                break
-            elif command[0] == "quit":
-                break
-            else:
-                print("not valid command")
-        except Exception as exc:
-            print(exc)
-
-
-if __name__ == "__main__":
-    main()
