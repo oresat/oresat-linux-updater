@@ -15,7 +15,7 @@ The archive file can contain *.deb packages, bash scripts, and will have a
 instructions.txt file to define the order deb packages are installed, remove,
 or bash scripts are ran.
 
-### Dependacies
+### Install Dependencies
 
 - `$ sudo apt install python3 python3-pydbus libsystemd-dev`
 
@@ -34,7 +34,7 @@ or bash scripts are ran.
 This program will make the Update Archives for the daemon that lives on all
 OreSat Linux boards.
 
-### Dependacies
+### Install Dependencies
 
 - `$ sudo apt install python3 python3-apt`
 
