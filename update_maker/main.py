@@ -6,7 +6,7 @@ from os.path import isfile
 from pathlib import Path
 from oresat_linux_updater.olm_file import OLMFile
 from oresat_linux_updater.instruction import Instruction, InstructionType
-from oresat_linux_updater.update_archive import create_update_file
+from oresat_linux_updater.update_archive import create_update_archive
 from oresat_linux_updater.status_archive import read_dpkg_status_file
 from apt.cache import Cache
 
@@ -193,7 +193,7 @@ class UpdateMaker():
 
         print("Making tar")
 
-        update_file = create_update_file(self._board, self._inst_list, "./")
+        update_file = create_update_archive(self._board, self._inst_list, "./")
 
         print("{} was made".format(update_file))
 
