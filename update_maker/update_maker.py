@@ -1,7 +1,8 @@
 """Make update files for OreSat Linux Updater daemon."""
 
-from os import listdir, remove
+from os import listdir, remove, walk, stat
 from os.path import isfile
+from shutil import copyfile
 from pathlib import Path
 from oresat_linux_updater.olm_file import OLMFile
 from oresat_linux_updater.instruction import Instruction, InstructionType
@@ -16,6 +17,10 @@ DOWNLOAD_DIR = ROOT_DIR + "var/cache/apt/archives/"
 DPKG_STATUS_FILE = ROOT_DIR + "var/lib/dpkg/status"
 UPDATE_CACHE_DIR = OLU_DIR + "update_cache/"
 STATUS_CACHE_DIR = OLU_DIR + "status_cache/"
+SYSTEM_APT_SOURCES_FILE = "/etc/apt/sources.list"
+SYSTEM_SIGNATURES_DIR = "/var/lib/apt/lists/"
+OLU_APT_SOURCES_FILE = ROOT_DIR + "etc/apt/sources.list"
+OLU_SIGNATURES_DIR = ROOT_DIR + "var/lib/apt/lists/"
 
 
 class UpdateMaker():
@@ -38,6 +43,21 @@ class UpdateMaker():
         print("updating cache")
         self._cache.update(raise_on_error=False)
         self._cache.open()
+
+        # copying the context of the real root apt source.list file into the local one
+        if stat(OLU_APT_SOURCES_FILE).st_size == 0 or not isfile(OLU_APT_SOURCES_FILE):
+            copyfile(SYSTEM_APT_SOURCES_FILE, OLU_APT_SOURCES_FILE)    
+        
+            # adding OreSat Debian apt repo
+            with open(OLU_APT_SOURCES_FILE, 'a') as f:
+                f.write('deb [trusted=yes] https://debian.oresat.org/packages ./') 
+
+        # copying the apt repo signatures
+        if len(listdir(OLU_SIGNATURES_DIR)) == 3:
+            for root, dirs, files in walk(SYSTEM_SIGNATURES_DIR): 
+                for file in files:
+                    if file != 'lock':
+                        copyfile(SYSTEM_SIGNATURES_DIR + file, OLU_SIGNATURES_DIR + file)         
 
         # make sure all dir exist
         Path(OLU_DIR).mkdir(parents=True, exist_ok=True)
