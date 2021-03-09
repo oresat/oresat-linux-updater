@@ -26,8 +26,11 @@ or bash scripts are ran.
 
 ### Usage
 
-- If install as a Debian package: `$ sudo systemctl start oresat-updaterd`
-- From repo: `$ sudo python3 -m oresat_linux_updater`
+- If install as a Debian package:
+  - `$ sudo systemctl start oresat-updaterd`
+- From repo:
+  - Add system D-Bus config: `$ sudo cp org.oresat.updater.conf /usr/share/dbus-1/system.d/`
+  - `$ sudo python3 -m oresat_linux_updater`
 
 ## Update Maker
 
