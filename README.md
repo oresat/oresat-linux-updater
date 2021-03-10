@@ -5,15 +5,15 @@
 [![Issues](https://img.shields.io/github/issues/oresat/oresat-linux-updater)](https://github.com/oresat/oresat-linux-updater/issues)
 [![Documentation Status](https://readthedocs.org/projects/oresat-linux-updater/badge/?version=latest)](https://oresat-linux.readthedocs.io/projects/oresat-linux-updater/en/latest/?badge=latest)
 
-This repos contant two projects: the OreSat Linux Updater Daemon and the Update Maker.
+This repo contains two projects: the OreSat Linux Updater Daemon and the Update Maker.
 
 ## OreSat Linux Updater Daemon
 
-This is a daemon available on on all OreSat Linux board and will allow any the
-board to update/patched through a archive file over a D-Bus interface.
-The archive file can contain *.deb packages, bash scripts, and will have a
-instructions.txt file to define the order deb packages are installed, remove,
-or bash scripts are ran.
+This is a daemon available on all OreSat Linux boards and will allow any of the
+boards to update/patch through an archive file over a D-Bus interface.
+The archive file can contain *.deb packages, bash scripts, and will have an
+instructions.txt file to define the order in which deb packages are installed/removed
+or bash scripts are run.
 
 ### Install Dependencies
 
@@ -26,7 +26,7 @@ or bash scripts are ran.
 
 ### Usage
 
-- If install as a Debian package:
+- If installed as a Debian package:
   - `$ sudo systemctl start oresat-updaterd`
 - From repo:
   - Add system D-Bus config: `$ sudo cp org.oresat.updater.conf /usr/share/dbus-1/system.d/`
