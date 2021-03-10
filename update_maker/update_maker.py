@@ -1,7 +1,8 @@
 """Make update files for OreSat Linux Updater daemon."""
 
+import sys
 from os import listdir, remove, walk, stat
-from os.path import isfile
+from os.path import isfile, basename
 from shutil import copyfile
 from pathlib import Path
 from oresat_linux_updater.olm_file import OLMFile
@@ -26,7 +27,7 @@ OLU_SIGNATURES_DIR = ROOT_DIR + "var/lib/apt/lists/"
 class UpdateMaker():
     """A class for making updates for OreSat Linux Updater daemon"""
 
-    def __init__(self, board: str):
+    def __init__(self, board: str, add: str):
         """
         Parameters
         ----------
@@ -70,6 +71,18 @@ class UpdateMaker():
         for i in listdir(DOWNLOAD_DIR):
             if i.endswith(".deb"):
                 remove(DOWNLOAD_DIR + i)
+
+        # add olu-status tar files to the olu-status cache
+        if add != None:
+            if isfile(add):
+                copyfile(add, STATUS_CACHE_DIR + basename(add))
+            else:
+                msg = "{} is not a valid olu-status tar file".format(add)
+                raise FileNotFoundError(msg)
+
+        # check if board parameter exists
+        if board == None:
+            sys.exit(1)
 
         status_files = []
         for i in listdir(STATUS_CACHE_DIR):

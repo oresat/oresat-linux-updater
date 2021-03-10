@@ -1,13 +1,17 @@
-"""CLI for makng update archives."""
+"""CLI for making update archives."""
 
 import sys
+from argparse import ArgumentParser
 from update_maker.update_maker import UpdateMaker
 
 
 def usage():
     """Print usage"""
     print("""
-    python3 make_update_pacakge.py <board>
+    python3 make_update_pacakge.py <board> <-a filepath>
+
+    options and arguments:
+        -a/--a:     add olu-status tar files to the olu-status cache
 
     cli commands:
         add-pkg:    add deb package(s)
@@ -25,7 +29,14 @@ def main():
         usage()
         sys.exit(1)
 
-    maker = UpdateMaker(sys.argv[1])
+    parser = ArgumentParser()
+    parser.add_argument("board", metavar="<board>", default=None, nargs='?',
+                        help="define the board used")
+    parser.add_argument("-a", "--add",
+                        help="add olu-status tar files to the olu-status cache")
+    args = parser.parse_args()
+
+    maker = UpdateMaker(args.board, args.add)
 
     while True:
         command = input("-> ").split(" ")
