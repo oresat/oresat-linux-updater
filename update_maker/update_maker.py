@@ -231,3 +231,14 @@ class UpdateMaker():
         update_file = create_update_archive(self._board, self._inst_list, "./")
 
         print("{} was made".format(update_file))
+
+        # option to move generate updates to the update cache
+        command = input("-> Save copy to update cache [Y/n]: ")
+
+        if command == "Y" or command == "y" or command == "yes":
+            try:
+                copyfile(update_file, UPDATE_CACHE_DIR + basename(update_file))
+            except:
+                print("An error occurred saving the copy to update cache")
+            else:
+                print("{} was added to update cache".format(update_file))
