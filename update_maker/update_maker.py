@@ -1,6 +1,5 @@
 """Make update files for OreSat Linux Updater daemon."""
 
-import sys
 from os import listdir, remove, walk, stat
 from os.path import isfile, basename
 from shutil import copyfile

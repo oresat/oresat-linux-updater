@@ -18,11 +18,6 @@ STATUS_CACHE_DIR = OLU_DIR + "status_cache/"
 def usage():
     """Print usage"""
     print("""
-    python3 make_update_pacakge.py <board> <-a filepath>
-
-    options and arguments:
-        -a/--a:     add olu-status tar files to the olu-status cache
-
     cli commands:
         add-pkg:    add deb package(s)
         remove-pkg: remove deb package(s)
@@ -51,16 +46,16 @@ def add_olu_cache(add: str):
             raise FileNotFoundError(msg)
 
 def main():
-    if len(sys.argv) < 2:
-        usage()
-        sys.exit(1)
-
-    parser = ArgumentParser()
+    parser = ArgumentParser(prog="python3 -m update_maker")
     parser.add_argument("board", metavar="<board>", default=None, nargs='?',
                         help="define the board used")
     parser.add_argument("-a", "--add",
                         help="add olu-status tar files to the olu-status cache")
     args = parser.parse_args()
+
+    if len(sys.argv) < 2:
+        parser.print_help()
+        sys.exit(1)
 
     creating_folders()
     add_olu_cache(args.add)
