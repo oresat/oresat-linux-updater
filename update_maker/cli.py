@@ -2,7 +2,17 @@
 
 import sys
 from argparse import ArgumentParser
+from os.path import isfile, basename
+from shutil import copyfile
+from pathlib import Path
 from update_maker.update_maker import UpdateMaker
+
+
+OLU_DIR = str(Path.home()) + "/.oresat_linux_updater/"
+ROOT_DIR = OLU_DIR + "root/"
+DOWNLOAD_DIR = ROOT_DIR + "var/cache/apt/archives/"
+UPDATE_CACHE_DIR = OLU_DIR + "update_cache/"
+STATUS_CACHE_DIR = OLU_DIR + "status_cache/"
 
 
 def usage():
@@ -23,6 +33,22 @@ def usage():
         quit:       quit the cli
     """)
 
+def creating_folders():
+    # make sure all dir exist   
+    Path(OLU_DIR).mkdir(parents=True, exist_ok=True)
+    Path(ROOT_DIR).mkdir(parents=True, exist_ok=True)
+    Path(DOWNLOAD_DIR).mkdir(parents=True, exist_ok=True)
+    Path(UPDATE_CACHE_DIR).mkdir(parents=True, exist_ok=True)
+    Path(STATUS_CACHE_DIR).mkdir(parents=True, exist_ok=True)
+
+def add_olu_cache(add: str):
+    # add olu-status tar files to the olu-status cache
+    if add != None:
+        if isfile(add):
+            copyfile(add, STATUS_CACHE_DIR + basename(add))
+        else:
+            msg = "{} is not a valid olu-status tar file".format(add)
+            raise FileNotFoundError(msg)
 
 def main():
     if len(sys.argv) < 2:
@@ -36,32 +62,37 @@ def main():
                         help="add olu-status tar files to the olu-status cache")
     args = parser.parse_args()
 
-    maker = UpdateMaker(args.board, args.add)
+    creating_folders()
+    add_olu_cache(args.add)
 
-    while True:
-        command = input("-> ").split(" ")
+    # check if board parameter exists
+    if args.board != None:
+        maker = UpdateMaker(args.board)
 
-        try:
-            if command[0] == "status":
-                maker.status()
-            elif command[0] == "help":
-                usage()
-            elif command[0] == "add-pkg":
-                maker.add_packages(command[1:])
-            elif command[0] == "remove-pkg":
-                maker.remove_packages(command[1:])
-            elif command[0] == "purge-pkg":
-                maker.purge_packages(command[1:])
-            elif command[0] == "add-bash":
-                maker.add_bash_scripts(command[1:])
-            elif command[0] == "add-files":
-                maker.add_support_files(command[1:])
-            elif command[0] == "make":
-                maker.make_update_archive()
-                break
-            elif command[0] == "quit":
-                break
-            else:
-                print("not valid command")
-        except Exception as exc:
-            print(exc)
+        while True:
+            command = input("-> ").split(" ")
+
+            try:
+                if command[0] == "status":
+                    maker.status()
+                elif command[0] == "help":
+                    usage()
+                elif command[0] == "add-pkg":
+                    maker.add_packages(command[1:])
+                elif command[0] == "remove-pkg":
+                    maker.remove_packages(command[1:])
+                elif command[0] == "purge-pkg":
+                    maker.purge_packages(command[1:])
+                elif command[0] == "add-bash":
+                    maker.add_bash_scripts(command[1:])
+                elif command[0] == "add-files":
+                    maker.add_support_files(command[1:])
+                elif command[0] == "make":
+                    maker.make_update_archive()
+                    break
+                elif command[0] == "quit":
+                    break
+                else:
+                    print("not valid command")
+            except Exception as exc:
+                print(exc)

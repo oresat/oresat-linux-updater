@@ -27,7 +27,7 @@ OLU_SIGNATURES_DIR = ROOT_DIR + "var/lib/apt/lists/"
 class UpdateMaker():
     """A class for making updates for OreSat Linux Updater daemon"""
 
-    def __init__(self, board: str, add: str):
+    def __init__(self, board: str):
         """
         Parameters
         ----------
@@ -60,29 +60,10 @@ class UpdateMaker():
                     if file != 'lock':
                         copyfile(SYSTEM_SIGNATURES_DIR + file, OLU_SIGNATURES_DIR + file)         
 
-        # make sure all dir exist
-        Path(OLU_DIR).mkdir(parents=True, exist_ok=True)
-        Path(ROOT_DIR).mkdir(parents=True, exist_ok=True)
-        Path(DOWNLOAD_DIR).mkdir(parents=True, exist_ok=True)
-        Path(UPDATE_CACHE_DIR).mkdir(parents=True, exist_ok=True)
-        Path(STATUS_CACHE_DIR).mkdir(parents=True, exist_ok=True)
-
         # clear download dir
         for i in listdir(DOWNLOAD_DIR):
             if i.endswith(".deb"):
-                remove(DOWNLOAD_DIR + i)
-
-        # add olu-status tar files to the olu-status cache
-        if add != None:
-            if isfile(add):
-                copyfile(add, STATUS_CACHE_DIR + basename(add))
-            else:
-                msg = "{} is not a valid olu-status tar file".format(add)
-                raise FileNotFoundError(msg)
-
-        # check if board parameter exists
-        if board == None:
-            sys.exit(1)
+                remove(DOWNLOAD_DIR + i)        
 
         status_files = []
         for i in listdir(STATUS_CACHE_DIR):
