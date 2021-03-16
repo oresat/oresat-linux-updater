@@ -1,7 +1,7 @@
 """Make update files for OreSat Linux Updater daemon."""
 
 from os import listdir, remove, walk, stat
-from os.path import isfile
+from os.path import isfile, basename
 from shutil import copyfile
 from pathlib import Path
 from oresat_linux_updater.olm_file import OLMFile
@@ -59,17 +59,10 @@ class UpdateMaker():
                     if file != 'lock':
                         copyfile(SYSTEM_SIGNATURES_DIR + file, OLU_SIGNATURES_DIR + file)         
 
-        # make sure all dir exist
-        Path(OLU_DIR).mkdir(parents=True, exist_ok=True)
-        Path(ROOT_DIR).mkdir(parents=True, exist_ok=True)
-        Path(DOWNLOAD_DIR).mkdir(parents=True, exist_ok=True)
-        Path(UPDATE_CACHE_DIR).mkdir(parents=True, exist_ok=True)
-        Path(STATUS_CACHE_DIR).mkdir(parents=True, exist_ok=True)
-
         # clear download dir
         for i in listdir(DOWNLOAD_DIR):
             if i.endswith(".deb"):
-                remove(DOWNLOAD_DIR + i)
+                remove(DOWNLOAD_DIR + i)        
 
         status_files = []
         for i in listdir(STATUS_CACHE_DIR):
@@ -218,3 +211,14 @@ class UpdateMaker():
         update_file = create_update_archive(self._board, self._inst_list, "./")
 
         print("{} was made".format(update_file))
+
+        # option to move generate updates to the update cache
+        command = input("-> Save copy to update cache [Y/n]: ")
+
+        if command == "Y" or command == "y" or command == "yes":
+            try:
+                copyfile(update_file, UPDATE_CACHE_DIR + basename(update_file))
+            except:
+                print("An error occurred saving the copy to update cache")
+            else:
+                print("{} was added to update cache".format(update_file))
