@@ -3,7 +3,7 @@
 from logging import Logger
 from time import sleep
 from enum import IntEnum, auto
-from threading import Thread
+from threading import Thread, Lock
 from pydbus.generic import signal
 from oresat_linux_updater.status_archive import make_status_archive
 from oresat_linux_updater.updater import Updater
@@ -21,7 +21,13 @@ class State(IntEnum):
     UPDATE = auto()
     """Updating."""
 
+    UPDATE_FAILED = auto()
+    """Update failed, cache was cleared"""
+
     STATUS_FILE = auto()
+    """Making the status tar file."""
+
+    STATUS_FILE_FAILED = auto()
     """Making the status tar file."""
 
 
@@ -106,6 +112,7 @@ class DBusServer():
         # set up working thread
         self._running = False
         self._working_thread = Thread(target=self._working_loop)
+        self._mutex = Lock()
 
     def __del__(self):
         self.quit()
@@ -132,12 +139,22 @@ class DBusServer():
 
         while self._running:
             if self._status == State.UPDATE:
-                self.UpdateResult(self._updater.update())
-                self._status = State.STANDBY
+                ret = self._updater.update()
+                self.UpdateResult(ret)
+                if ret is True:
+                    self._status = State.STANDBY
+                else:
+                    self._status = State.UPDATE_FAILED
             elif self._status == State.STATUS_FILE:
-                self.StatusArchive(make_status_archive(self._cache_dir, True))
-                self._status = State.STANDBY
-            elif self._status == State.STANDBY:
+                ret = make_status_archive(self._cache_dir, True)
+                self.StatusArchive(ret)
+                if ret is True:
+                    self._status = State.STANDBY
+                else:
+                    self._status = State.STATUS_FILE_FAILED
+            elif self._status in [State.STANDBY,
+                                  State.STATUS_FILE_FAILED,
+                                  State.UPDATE_FAILED]:
                 sleep(0.1)  # nothing for this thread to do
             else:  # this should not happen
                 msg = "Invalid state in working loop {}".format(self._status)
@@ -176,9 +193,13 @@ class DBusServer():
 
         ret = False
 
-        if self._status == State.STANDBY:
+        self._mutex.acquire()
+        if self._status in [State.STANDBY,
+                            State.STATUS_FILE_FAILED,
+                            State.UPDATE_FAILED]:
             self._status = State.UPDATE
             ret = True
+        self._mutex.release()
 
         return ret
 
@@ -196,9 +217,13 @@ class DBusServer():
 
         ret = False
 
-        if self._status == State.STANDBY:
+        self._mutex.acquire()
+        if self._status in [State.STANDBY,
+                            State.STATUS_FILE_FAILED,
+                            State.UPDATE_FAILED]:
             self._status = State.STATUS_FILE
             ret = True
+        self._mutex.release()
 
         return ret
 
