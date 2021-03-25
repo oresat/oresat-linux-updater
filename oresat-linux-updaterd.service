@@ -4,7 +4,7 @@ Description=Allow OreSat Linux board to be updated over dbus.
 [Service]
 Type=forking
 PIDFile=/run/oresat-linux-updaterd.pid
-ExecStart=/usr/bin/python3 oresat-linux-updater -d
+ExecStart=/usr/bin/python3 /usr/bin/oresat-linux-updater -d
 
 [Install]
 WantedBy=multi-user.target
