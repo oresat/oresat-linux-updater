@@ -84,7 +84,7 @@ class Updater():
         self._current_instruction_index = 0
         self._current_command = ""
         self._cache = listdir(self._cache_dir)
-        self._cache.sort(reverse=True)  # reverse for pop()
+        self._cache.sort()
 
     def clear_cache_dir(self):
         """Clears the working directory."""
@@ -116,7 +116,7 @@ class Updater():
             OLMFile(load=update_archive)
             copyfile(update_archive, self._cache_dir + filename)
             self._cache.append(filename)
-            self._cache.sort(reverse=True)  # reverse for pop()
+            self._cache.sort()
             self._log.info(filename + " was added to cache")
         except Exception:
             self._log.error(filename + " is a invalid filename")
@@ -177,7 +177,7 @@ class Updater():
         # if not resuming, get new update archive from cache
         if self._update_archive == "" and len(self._cache) != 0:
             self._update_archive = \
-                move(self._cache_dir + self._cache.pop(), self._work_dir)
+                move(self._cache_dir + self._cache.pop(0), self._work_dir)
             msg = "got {} from cache".format(basename(self._update_archive))
             self._log.info(msg)
 
