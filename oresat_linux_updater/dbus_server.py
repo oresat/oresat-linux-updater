@@ -6,7 +6,7 @@ from enum import IntEnum, auto
 from threading import Thread, Lock
 from pydbus.generic import signal
 from oresat_linux_updater.status_archive import make_status_archive
-from oresat_linux_updater.updater import Updater
+from oresat_linux_updater.updater import Updater, Result
 
 
 DBUS_INTERFACE_NAME = "org.oresat.updater"
@@ -142,17 +142,17 @@ class DBusServer():
             if self._status == State.UPDATE:
                 ret = self._updater.update()
                 self.UpdateResult(ret)
-                if ret is True:
+                if ret in [Result.NOTHING, Result.SUCCESS]:
                     self._status = State.STANDBY
                 else:
                     self._status = State.UPDATE_FAILED
             elif self._status == State.STATUS_FILE:
                 ret = make_status_archive(self._cache_dir, True)
                 self.StatusArchive(ret)
-                if ret is True:
-                    self._status = State.STANDBY
-                else:
+                if ret == "":
                     self._status = State.STATUS_FILE_FAILED
+                else:
+                    self._status = State.STANDBY
             elif self._status in [State.STANDBY,
                                   State.STATUS_FILE_FAILED,
                                   State.UPDATE_FAILED]:
