@@ -1,5 +1,5 @@
 [Unit]
-Description=Allow OreSat Linux board to be updated over dbus.
+Description=OreSat Linux D-Bus based updater.
 
 [Service]
 Type=forking
