@@ -35,6 +35,8 @@ def main():
                         help="start update")
     parser.add_argument("-s", "--status-archive", action="store_true",
                         help="make status archive file")
+    parser.add_argument("-l", "--list-updates", action="store_true",
+                        help="list update files in cache")
     args = parser.parse_args()
 
     # set up bus connection
@@ -50,6 +52,9 @@ def main():
     elif args.status_archive:
         ret = updater.MakeStatusArchive()
         print("MakeStatusArchive returned: " + str(ret))
+    elif args.list_updates:
+        ret = updater.ListUpdates
+        print("ListUpdates returned: " + ret)
 
 
 main()

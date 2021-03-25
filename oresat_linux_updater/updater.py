@@ -1,5 +1,6 @@
 """Linux updater daemon"""
 
+import json
 from logging import Logger
 from os import listdir
 from os.path import abspath, basename
@@ -83,6 +84,7 @@ class Updater():
         self._current_instruction_index = 0
         self._current_command = ""
         self._cache = listdir(self._cache_dir)
+        self._cache.sort(reverse=True)  # reverse for pop()
 
     def clear_cache_dir(self):
         """Clears the working directory."""
@@ -114,7 +116,7 @@ class Updater():
             OLMFile(load=update_archive)
             copyfile(update_archive, self._cache_dir + filename)
             self._cache.append(filename)
-            self._cache.sort(reverse=True)
+            self._cache.sort(reverse=True)  # reverse for pop()
             self._log.info(filename + " was added to cache")
         except Exception:
             self._log.error(filename + " is a invalid filename")
@@ -250,6 +252,12 @@ class Updater():
         """int: The number of update archives in cache. Readonly."""
 
         return len(self._cache)
+
+    @property
+    def list_updates(self) -> str:
+        """str: Get a JSON list of filename in cache. Readonly."""
+
+        return json.dumps(self._cache)
 
     @property
     def is_updating(self) -> bool:

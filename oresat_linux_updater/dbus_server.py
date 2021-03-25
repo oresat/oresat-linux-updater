@@ -55,6 +55,7 @@ class DBusServer():
             <property name="StatusName" type="s" access="read" />
             <property name="StatusValue" type="y" access="read" />
             <property name="AvailableUpdateArchives" type="u" access="read" />
+            <property name="ListUpdates" type="s" access="read" />
             <signal name="StatusArchive">
                 <arg type='s'/>
             </signal>
@@ -261,6 +262,14 @@ class DBusServer():
         """
 
         return self._updater.update_archive
+
+    @property
+    def ListUpdates(self) -> str:
+        """str: D-Bus Property for get the list of update filename in the
+        cache. Readonly.
+        """
+
+        return self._updater.list_updates
 
     @property
     def TotalInstructions(self) -> int:
