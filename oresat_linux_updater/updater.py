@@ -115,9 +115,12 @@ class Updater():
         try:
             OLMFile(load=update_archive)
             copyfile(update_archive, self._cache_dir + filename)
-            self._cache.append(filename)
-            self._cache.sort()
-            self._log.info(filename + " was added to cache")
+            if filename not in self._cache:
+                self._cache.append(filename)
+                self._cache.sort()
+                self._log.info(filename + " was added to cache")
+            else:
+                self._log.info("overwrote " + filename + " in cache")
         except Exception:
             self._log.error(filename + " is a invalid filename")
             ret = False
