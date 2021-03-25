@@ -1,10 +1,10 @@
 #!/bin/sh
 
-ARCHIVE_CACHE=/var/cache/oresat-linux-updater/
+ARCHIVE_CACHE_DIR=/var/cache/oresat_linux_updater
+WORK_DIR=/var/lib/oresat_linux_manager
 
-# remove archive cache
-if [ $1 = "remove"  || $1 = "purge" ]; then
-    rm -rf ARCHIVE_CACHE
+if [ $1 = "purge" ]; then
+    rm -rf ARCHIVE_CACHE_DIR WORK_DIR
 fi
 
 systemctl daemon-reload
