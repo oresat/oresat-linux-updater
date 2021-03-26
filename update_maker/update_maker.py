@@ -1,13 +1,16 @@
 """Make update files for OreSat Linux Updater daemon."""
 
+import tarfile
+import json
 from os import listdir, remove, walk, stat
 from os.path import isfile, basename
 from shutil import copyfile
 from pathlib import Path
+from ast import literal_eval
 from oresat_linux_updater.olm_file import OLMFile
 from oresat_linux_updater.instruction import Instruction, InstructionType
 from oresat_linux_updater.update_archive import create_update_archive
-from oresat_linux_updater.status_archive import read_dpkg_status_file
+from oresat_linux_updater.status_archive import read_dpkg_status_file, read_olu_status_file
 from apt.cache import Cache
 
 
@@ -39,6 +42,8 @@ class UpdateMaker():
         self._cache = Cache(rootdir=ROOT_DIR)
         self._deb_pkgs = []
         self._inst_list = []
+        self._not_installed_yet_list = []
+        self._not_removed_yet_list = []
 
         print("updating cache")
         self._cache.update(raise_on_error=False)
@@ -84,7 +89,20 @@ class UpdateMaker():
         with open(DPKG_STATUS_FILE, "w") as fptr:
             fptr.write(dpkg_data)
 
-        # TODO deal with update files that are not installed yet.
+        # dealing with update files that are not installed yet
+        olu_status_data = read_olu_status_file(self._status_file)
+        for file in literal_eval(olu_status_data):
+            with tarfile.open(UPDATE_CACHE_DIR + file, "r") as tar:
+                with tar.extractfile("instructions.txt") as instructions:
+                    for i in json.loads(instructions.read()):
+                        if i["type"] == "DPKG_INSTALL":
+                            for pkg in i["items"]:
+                                pkg_obj = self._cache[pkg.split('_')[0]]
+                                pkg_obj.mark_install() 
+                            self._not_installed_yet_list.extend(i["items"])
+                        elif i["type"] == "DPKG_REMOVE" or i["type"] == "DPKG_PURGE":
+                            self._not_removed_yet_list.extend(i["items"])
+
 
     def add_packages(self, packages: list):
         """Add deb packages to be installed.
@@ -102,7 +120,25 @@ class UpdateMaker():
 
         for pkg in packages:
             pkg_obj = self._cache[pkg]
-            pkg_obj.mark_install()  # this will mark all dependencies too
+
+            # checking the not yet installed and removed packages
+            not_installed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
+            not_removed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
+
+            if pkg_obj.name in not_removed_yet_list_cleaned:
+                command = input("-> Would you like to reinstall {} package? [Y/n] ".format(pkg_obj.name))
+                if command == "Y" or command == "y" or command == "yes":
+                    pkg_index = not_removed_yet_list_cleaned.index(pkg_obj.name)
+                    pkg_obj.mark_install()  # this will mark all dependencies too
+                    self._not_removed_yet_list.pop(pkg_index)
+            elif pkg_obj.name in not_installed_yet_list_cleaned:
+                command = input("-> Would you like to reinstall {}? [Y/n] ".format(pkg_obj.name))
+                if command == "Y" or command == "y" or command == "yes":
+                    pkg_index = not_installed_yet_list_cleaned.index(pkg_obj.name)
+                    pkg_obj.mark_install()
+                    self._not_installed_yet_list.pop(pkg_index)
+            else:
+                pkg_obj.mark_install()
 
             # find new packages (dependencies) that are marked
             for deb_pkg in self._cache:
