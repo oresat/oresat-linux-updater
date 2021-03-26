@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ARCHIVE_CACHE_DIR=/var/cache/oresat_linux_updater
-WORK_DIR=/var/lib/oresat_linux_manager
+WORK_DIR=/var/lib/oresat_linux_updater
 
 if [ $1 = "purge" ]; then
     rm -rf ARCHIVE_CACHE_DIR WORK_DIR

@@ -13,8 +13,8 @@ from gi.repository import GLib
 from oresat_linux_updater.dbus_server import DBusServer, DBUS_INTERFACE_NAME
 
 
-CACHE_DIR = "/var/cache/oresat_linux_manager/"
-WORK_DIR = "/var/lib/oresat_linux_manager/"
+CACHE_DIR = "/var/cache/oresat_linux_updater/"
+WORK_DIR = "/var/lib/oresat_linux_updater/"
 
 
 def _daemonize(pid_file: str):
