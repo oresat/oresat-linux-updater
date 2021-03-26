@@ -49,14 +49,14 @@ class UpdateMaker():
             copyfile(SYSTEM_APT_SOURCES_FILE, OLU_APT_SOURCES_FILE)    
         
             # adding OreSat Debian apt repo
-            with open(OLU_APT_SOURCES_FILE, 'a') as f:
-                f.write('deb [trusted=yes] https://debian.oresat.org/packages ./') 
+            with open(OLU_APT_SOURCES_FILE, "a") as f:
+                f.write("deb [trusted=yes] https://debian.oresat.org/packages ./") 
 
         # copying the apt repo signatures
         if len(listdir(OLU_SIGNATURES_DIR)) == 3:
             for root, dirs, files in walk(SYSTEM_SIGNATURES_DIR): 
                 for file in files:
-                    if file != 'lock':
+                    if file != "lock":
                         copyfile(SYSTEM_SIGNATURES_DIR + file, OLU_SIGNATURES_DIR + file)         
 
         # clear download dir
