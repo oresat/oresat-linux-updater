@@ -16,11 +16,6 @@ def properties_changed_cb(*args):
     sys.exit(0)
 
 
-def status_archive_cb(*args):
-    print("StatusArchive returned: ", args[4][0])
-    sys.exit(0)
-
-
 def update_result_cb(*args):
     print("UpdateResult returned: ", args[4][0])
     sys.exit(0)
@@ -51,7 +46,7 @@ def main():
         print("Update returned: " + str(ret))
     elif args.status_archive:
         ret = updater.MakeStatusArchive()
-        print("MakeStatusArchive returned: " + str(ret))
+        print("MakeStatusArchive returned: " + ret)
     elif args.list_updates:
         ret = updater.ListUpdates
         print("ListUpdates returned: " + ret)

@@ -27,9 +27,6 @@ class State(IntEnum):
     STATUS_FILE = auto()
     """Making the status tar file."""
 
-    STATUS_FILE_FAILED = auto()
-    """Making the status tar file."""
-
 
 class DBusServer():
     """The D-Bus Server wrapper ontop oresat linux updater that handles all
@@ -50,7 +47,7 @@ class DBusServer():
                 <arg type='b' name='output' direction='out'/>
             </method>
             <method name='MakeStatusArchive'>
-                <arg type='b' name='output' direction='out'/>
+                <arg type='s' name='filepath' direction='out'/>
             </method>
             <property name="StatusName" type="s" access="read" />
             <property name="StatusValue" type="y" access="read" />
@@ -146,15 +143,8 @@ class DBusServer():
                     self._status = State.STANDBY
                 else:
                     self._status = State.UPDATE_FAILED
-            elif self._status == State.STATUS_FILE:
-                ret = make_status_archive(self._cache_dir, True)
-                self.StatusArchive(ret)
-                if ret == "":
-                    self._status = State.STATUS_FILE_FAILED
-                else:
-                    self._status = State.STANDBY
             elif self._status in [State.STANDBY,
-                                  State.STATUS_FILE_FAILED,
+                                  State.STATUS_FILE,
                                   State.UPDATE_FAILED]:
                 sleep(0.1)  # nothing for this thread to do
             else:  # this should not happen
@@ -196,7 +186,6 @@ class DBusServer():
 
         self._mutex.acquire()
         if self._status in [State.STANDBY,
-                            State.STATUS_FILE_FAILED,
                             State.UPDATE_FAILED]:
             self._status = State.UPDATE
             ret = True
@@ -204,26 +193,32 @@ class DBusServer():
 
         return ret
 
-    def MakeStatusArchive(self) -> bool:
+    def MakeStatusArchive(self) -> str:
         """D-Bus Method to make status tar file with a copy of the dpkg status
-        file and a file with the list of update archives in cache. Will
-        asynchronously reply with the StatusArchive D-Bus Signal with the path
-        to the file once the file is made.
+        file and a file with the list of update archives in cache.
 
         Returns
         -------
-        bool
-            True if a the updater will make the status tar or False on failure.
+        str
+            Filepath to new file or empty str.
         """
-
-        ret = False
 
         self._mutex.acquire()
         if self._status in [State.STANDBY,
-                            State.STATUS_FILE_FAILED,
                             State.UPDATE_FAILED]:
             self._status = State.STATUS_FILE
-            ret = True
+        self._mutex.release()
+
+        self._log.debug("making status archive")
+        ret = make_status_archive(self._cache_dir, True)
+
+        if ret == "":
+            self._log.critical("failed to make status archive")
+        else:
+            self._log.info(ret + " was made")
+
+        self._mutex.acquire()
+        self._status = State.STANDBY
         self._mutex.release()
 
         return ret
