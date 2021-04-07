@@ -102,9 +102,11 @@ class UpdateMaker():
                             self._not_installed_yet_list.extend(i["items"])
                         elif i["type"] == "DPKG_REMOVE" or i["type"] == "DPKG_PURGE":
                             self._not_removed_yet_list.extend(i["items"])
+        self._not_installed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
+        self._not_removed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
 
 
-    def add_packages(self, packages: list):
+    def add_packages(self, packages: list, reinstall_not_installed: list , reinstall_not_removed: list):
         """Add deb packages to be installed.
 
         Parameters
@@ -122,23 +124,16 @@ class UpdateMaker():
             pkg_obj = self._cache[pkg]
 
             # checking the not yet installed and removed packages
-            not_installed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
-            not_removed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
-
-            if pkg_obj.name in not_removed_yet_list_cleaned:
-                command = input("-> Would you like to reinstall {} package? [Y/n] ".format(pkg_obj.name))
-                if command == "Y" or command == "y" or command == "yes":
-                    pkg_index = not_removed_yet_list_cleaned.index(pkg_obj.name)
-                    pkg_obj.mark_install()  # this will mark all dependencies too
-                    self._not_removed_yet_list.pop(pkg_index)
-            elif pkg_obj.name in not_installed_yet_list_cleaned:
-                command = input("-> Would you like to reinstall {}? [Y/n] ".format(pkg_obj.name))
-                if command == "Y" or command == "y" or command == "yes":
-                    pkg_index = not_installed_yet_list_cleaned.index(pkg_obj.name)
-                    pkg_obj.mark_install()
-                    self._not_installed_yet_list.pop(pkg_index)
-            else:
-                pkg_obj.mark_install()
+            if pkg_obj.name in reinstall_not_removed:
+                pkg_index = self._not_removed_yet_list_cleaned.index(pkg_obj.name)
+                self._not_removed_yet_list.pop(pkg_index)
+                self._not_removed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
+            elif pkg_obj.name in reinstall_not_installed:
+                pkg_index = self._not_installed_yet_list_cleaned.index(pkg_obj.name)
+                self._not_installed_yet_list.pop(pkg_index)
+                self._not_installed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
+            
+            pkg_obj.mark_install()
 
             # find new packages (dependencies) that are marked
             for deb_pkg in self._cache:
