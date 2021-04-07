@@ -128,12 +128,14 @@ class UpdateMaker():
                 pkg_index = self._not_removed_yet_list_cleaned.index(pkg_obj.name)
                 self._not_removed_yet_list.pop(pkg_index)
                 self._not_removed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
+                pkg_obj.mark_install()
             elif pkg_obj.name in reinstall_not_installed:
                 pkg_index = self._not_installed_yet_list_cleaned.index(pkg_obj.name)
                 self._not_installed_yet_list.pop(pkg_index)
                 self._not_installed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
-            
-            pkg_obj.mark_install()
+                pkg_obj.mark_install()
+            elif pkg_obj.name not in self._not_installed_yet_list_cleaned and pkg_obj.name not in self._not_removed_yet_list_cleaned:
+                pkg_obj.mark_install()
 
             # find new packages (dependencies) that are marked
             for deb_pkg in self._cache:
