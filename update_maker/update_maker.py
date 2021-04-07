@@ -102,9 +102,14 @@ class UpdateMaker():
                             self._not_installed_yet_list.extend(i["items"])
                         elif i["type"] == "DPKG_REMOVE" or i["type"] == "DPKG_PURGE":
                             self._not_removed_yet_list.extend(i["items"])
-        self._not_installed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
-        self._not_removed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
 
+    @property
+    def not_installed_yet(self) -> list:
+        return [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
+
+    @property
+    def not_removed_yet(self) -> list:
+        return [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
 
     def add_packages(self, packages: list, reinstall_not_installed: list , reinstall_not_removed: list):
         """Add deb packages to be installed.
@@ -125,16 +130,14 @@ class UpdateMaker():
 
             # checking the not yet installed and removed packages
             if pkg_obj.name in reinstall_not_removed:
-                pkg_index = self._not_removed_yet_list_cleaned.index(pkg_obj.name)
+                pkg_index = self.not_removed_yet.index(pkg_obj.name)
                 self._not_removed_yet_list.pop(pkg_index)
-                self._not_removed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
                 pkg_obj.mark_install()
             elif pkg_obj.name in reinstall_not_installed:
-                pkg_index = self._not_installed_yet_list_cleaned.index(pkg_obj.name)
+                pkg_index = self.not_installed_yet.index(pkg_obj.name)
                 self._not_installed_yet_list.pop(pkg_index)
-                self._not_installed_yet_list_cleaned = [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
                 pkg_obj.mark_install()
-            elif pkg_obj.name not in self._not_installed_yet_list_cleaned and pkg_obj.name not in self._not_removed_yet_list_cleaned:
+            elif pkg_obj.name not in self.not_installed_yet and pkg_obj.name not in self.not_removed_yet:
                 pkg_obj.mark_install()
 
             # find new packages (dependencies) that are marked

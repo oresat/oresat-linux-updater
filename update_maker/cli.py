@@ -90,7 +90,7 @@ def main():
                 elif command[0] == "help":
                     usage()
                 elif command[0] == "add-pkg":
-                    reinstall_not_installed, reinstall_not_removed = reinstall_input(command[1:], maker._not_installed_yet_list_cleaned, maker._not_removed_yet_list_cleaned)
+                    reinstall_not_installed, reinstall_not_removed = reinstall_input(command[1:], maker.not_installed_yet, maker.not_removed_yet)
                     maker.add_packages(command[1:], reinstall_not_installed, reinstall_not_removed)
                 elif command[0] == "remove-pkg":
                     maker.remove_packages(command[1:])
