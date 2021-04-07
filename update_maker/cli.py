@@ -45,6 +45,23 @@ def add_olu_cache(add: str):
             msg = "{} is not a valid olu-status tar file".format(add)
             raise FileNotFoundError(msg)
 
+def reinstall_input(packages: list, not_installed_yet_list: list, not_removed_yet_list: list): 
+
+    reinstall_not_installed = []
+    reinstall_not_removed = []
+
+    for pkg in packages:
+        if pkg in not_removed_yet_list:
+            command = input("-> Would you like to reinstall {}? [Y/n] ".format(pkg))
+            if command == "Y" or command == "y" or command == "yes":
+                reinstall_not_removed.append(pkg)
+        elif pkg in not_installed_yet_list:
+            command = input("-> Would you like to reinstall {}? [Y/n] ".format(pkg))
+            if command == "Y" or command == "y" or command == "yes":
+                reinstall_not_installed.append(pkg)
+    
+    return [reinstall_not_installed, reinstall_not_removed]
+
 def main():
     parser = ArgumentParser(prog="python3 -m update_maker")
     parser.add_argument("board", metavar="<board>", default=None, nargs='?',
@@ -73,7 +90,8 @@ def main():
                 elif command[0] == "help":
                     usage()
                 elif command[0] == "add-pkg":
-                    maker.add_packages(command[1:])
+                    reinstall_not_installed, reinstall_not_removed = reinstall_input(command[1:], maker.not_installed_yet, maker.not_removed_yet)
+                    maker.add_packages(command[1:], reinstall_not_installed, reinstall_not_removed)
                 elif command[0] == "remove-pkg":
                     maker.remove_packages(command[1:])
                 elif command[0] == "purge-pkg":

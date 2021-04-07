@@ -1,13 +1,16 @@
 """Make update files for OreSat Linux Updater daemon."""
 
+import tarfile
+import json
 from os import listdir, remove, walk, stat
 from os.path import isfile, basename
 from shutil import copyfile
 from pathlib import Path
+from ast import literal_eval
 from oresat_linux_updater.olm_file import OLMFile
 from oresat_linux_updater.instruction import Instruction, InstructionType
 from oresat_linux_updater.update_archive import create_update_archive
-from oresat_linux_updater.status_archive import read_dpkg_status_file
+from oresat_linux_updater.status_archive import read_dpkg_status_file, read_olu_status_file
 from apt.cache import Cache
 
 
@@ -39,6 +42,8 @@ class UpdateMaker():
         self._cache = Cache(rootdir=ROOT_DIR)
         self._deb_pkgs = []
         self._inst_list = []
+        self._not_installed_yet_list = []
+        self._not_removed_yet_list = []
 
         print("updating cache")
         self._cache.update(raise_on_error=False)
@@ -49,14 +54,14 @@ class UpdateMaker():
             copyfile(SYSTEM_APT_SOURCES_FILE, OLU_APT_SOURCES_FILE)    
         
             # adding OreSat Debian apt repo
-            with open(OLU_APT_SOURCES_FILE, 'a') as f:
-                f.write('deb [trusted=yes] https://debian.oresat.org/packages ./') 
+            with open(OLU_APT_SOURCES_FILE, "a") as f:
+                f.write("deb [trusted=yes] https://debian.oresat.org/packages ./") 
 
         # copying the apt repo signatures
         if len(listdir(OLU_SIGNATURES_DIR)) == 3:
             for root, dirs, files in walk(SYSTEM_SIGNATURES_DIR): 
                 for file in files:
-                    if file != 'lock':
+                    if file != "lock":
                         copyfile(SYSTEM_SIGNATURES_DIR + file, OLU_SIGNATURES_DIR + file)         
 
         # clear download dir
@@ -84,9 +89,29 @@ class UpdateMaker():
         with open(DPKG_STATUS_FILE, "w") as fptr:
             fptr.write(dpkg_data)
 
-        # TODO deal with update files that are not installed yet.
+        # dealing with update files that are not installed yet
+        olu_status_data = read_olu_status_file(self._status_file)
+        for file in literal_eval(olu_status_data):
+            with tarfile.open(UPDATE_CACHE_DIR + file, "r") as tar:
+                with tar.extractfile("instructions.txt") as instructions:
+                    for i in json.loads(instructions.read()):
+                        if i["type"] == "DPKG_INSTALL":
+                            for pkg in i["items"]:
+                                pkg_obj = self._cache[pkg.split('_')[0]]
+                                pkg_obj.mark_install() 
+                            self._not_installed_yet_list.extend(i["items"])
+                        elif i["type"] == "DPKG_REMOVE" or i["type"] == "DPKG_PURGE":
+                            self._not_removed_yet_list.extend(i["items"])
 
-    def add_packages(self, packages: list):
+    @property
+    def not_installed_yet(self) -> list:
+        return [pkg.split('_')[0] for pkg in self._not_installed_yet_list]
+
+    @property
+    def not_removed_yet(self) -> list:
+        return [pkg.split('_')[0] for pkg in self._not_removed_yet_list]
+
+    def add_packages(self, packages: list, reinstall_not_installed: list , reinstall_not_removed: list):
         """Add deb packages to be installed.
 
         Parameters
@@ -102,7 +127,18 @@ class UpdateMaker():
 
         for pkg in packages:
             pkg_obj = self._cache[pkg]
-            pkg_obj.mark_install()  # this will mark all dependencies too
+
+            # checking the not yet installed and removed packages
+            if pkg_obj.name in reinstall_not_removed:
+                pkg_index = self.not_removed_yet.index(pkg_obj.name)
+                self._not_removed_yet_list.pop(pkg_index)
+                pkg_obj.mark_install()
+            elif pkg_obj.name in reinstall_not_installed:
+                pkg_index = self.not_installed_yet.index(pkg_obj.name)
+                self._not_installed_yet_list.pop(pkg_index)
+                pkg_obj.mark_install()
+            elif pkg_obj.name not in self.not_installed_yet and pkg_obj.name not in self.not_removed_yet:
+                pkg_obj.mark_install()
 
             # find new packages (dependencies) that are marked
             for deb_pkg in self._cache:
