@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SERVICE_FILE=oresat-linux-managerd.service
+SERVICE_FILE=oresat-linux-updaterd.service
 
 systemctl stop $SERVICE_FILE
 
