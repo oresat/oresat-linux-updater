@@ -1,6 +1,12 @@
+oresat-linux-updater (1.0.0-0) unstable; urgency=low
+
+  * Oresat0
+
+ -- PSAS <oresat@pdx.edu>  Thu, 22 Apr 2021 14:45:12 -0700
+
 oresat-linux-updater (0.1.0-1) unstable; urgency=low
 
   * inital package
 
- -- Ryan Medick <rmedick@pdx.edu>  Mon, 14 Dec 2020 21:07:50 +0000
+ -- PSAS <oresat@pdx.edu>  Mon, 14 Dec 2020 21:07:50 +0000
 
