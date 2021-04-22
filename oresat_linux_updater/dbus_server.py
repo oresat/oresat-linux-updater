@@ -9,7 +9,7 @@ from oresat_linux_updater.status_archive import make_status_archive
 from oresat_linux_updater.updater import Updater, Result
 
 
-DBUS_INTERFACE_NAME = "org.oresat.updater"
+DBUS_INTERFACE_NAME = "org.OreSat.Updater"
 
 
 class State(IntEnum):
@@ -38,7 +38,7 @@ class DBusServer():
     # D-Bus interface(s) definition
     dbus = """
     <node>
-        <interface name="org.oresat.updater">
+        <interface name="org.OreSat.Updater">
             <method name='AddUpdateArchive'>
                 <arg type='s' name='update_archive' direction='in'/>
                 <arg type='b' name='output' direction='out'/>
@@ -60,7 +60,7 @@ class DBusServer():
                 <arg type='y'/>
             </signal>
         </interface>
-        <interface name="org.oresat.updater.update">
+        <interface name="org.OreSat.Updater.Update">
             <property name="UpdateArchive" type="s" access="read" />
             <property name="TotalInstructions" type="y" access="read" />
             <property name="InstructionIndex" type="y" access="read" />

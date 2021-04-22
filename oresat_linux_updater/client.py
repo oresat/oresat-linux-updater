@@ -6,9 +6,9 @@ import sys
 import argparse
 from pydbus import SystemBus
 
-ISENDER = "org.oresat.updater"
-IFACE = "org.oresat.updater"
-OBJECT = "/org/oresat/updater"
+ISENDER = "org.OreSat.Updater"
+IFACE = "org.OreSat.Updater"
+OBJECT = "/org/OreSat/Updater"
 
 
 def properties_changed_cb(*args):

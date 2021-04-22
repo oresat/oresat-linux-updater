@@ -1,2 +1,2 @@
 oresat-linux-updaterd.service /lib/systemd/system/
-org.oresat.updater.conf /usr/share/dbus-1/system.d/
+org.OreSat.Updater.conf /usr/share/dbus-1/system.d/
